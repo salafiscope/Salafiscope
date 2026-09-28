@@ -1,0 +1,4406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SalafiScope Task</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F6E64">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SalafiScope Task">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F6F3;
+    --surface: #FFFFFF;
+    --surface-2: #EFF1EE;
+    --ink: #1C2321;
+    --ink-soft: #5B655F;
+    --ink-faint: #8B9490;
+    --accent: #0F6E64;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E2F1EE;
+    --border: #E1E4DF;
+    --danger: #B3261E;
+    --danger-soft: #FBEAE9;
+    --high: #C6453D;
+    --medium: #B9821A;
+    --low: #2F8F5B;
+    --shadow: 0 1px 2px rgba(28,35,33,0.04), 0 6px 20px rgba(28,35,33,0.06);
+    --radius: 14px;
+    --radius-sm: 9px;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #14181A;
+      --surface: #1C2121;
+      --surface-2: #232928;
+      --ink: #ECEEEC;
+      --ink-soft: #9AA39E;
+      --ink-faint: #6B746F;
+      --accent: #45BFAF;
+      --accent-ink: #0B1413;
+      --accent-soft: #1C3330;
+      --border: #2A302E;
+      --danger: #E5847C;
+      --danger-soft: #3A2222;
+      --high: #E38D87;
+      --medium: #E0B457;
+      --low: #6FC494;
+      --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14181A;
+    --surface: #1C2121;
+    --surface-2: #232928;
+    --ink: #ECEEEC;
+    --ink-soft: #9AA39E;
+    --ink-faint: #6B746F;
+    --accent: #45BFAF;
+    --accent-ink: #0B1413;
+    --accent-soft: #1C3330;
+    --border: #2A302E;
+    --danger: #E5847C;
+    --danger-soft: #3A2222;
+    --high: #E38D87;
+    --medium: #E0B457;
+    --low: #6FC494;
+    --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+  }
+
+  html {
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, textarea, select {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .app {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px 18px 100px;
+    min-height: 100%;
+  }
+
+  /* ---------- Header ---------- */
+  .app-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .brand h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 27px;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+
+  .brand p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+  .icon-btn:hover { color: var(--ink); background: var(--surface-2); }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn svg { width: 19px; height: 19px; }
+
+  /* ---------- Greeting / progress ---------- */
+  .greeting-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .greeting-card h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    margin: 0 0 2px;
+  }
+
+  .greeting-sub {
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    margin: 0 0 14px;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-pct {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    min-width: 34px;
+    text-align: right;
+  }
+
+  .stat-strip {
+    display: flex;
+    gap: 14px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat {
+    flex: 1;
+    text-align: left;
+  }
+
+  .stat b {
+    display: block;
+    font-size: 18px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .stat span {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- Add task ---------- */
+  .add-task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .add-task-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  #task-input {
+    flex: 1;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    color: var(--ink);
+  }
+  #task-input::placeholder { color: var(--ink-faint); }
+
+  .btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 11px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-ghost { background: var(--surface-2); color: var(--ink); }
+  .btn-ghost:hover { filter: brightness(0.97); }
+  .btn-danger { background: var(--danger-soft); color: var(--danger); }
+  .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .voice-row {
+    margin-top: 8px;
+  }
+
+  .voice-btn {
+    width: 100%;
+    justify-content: center;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px dashed var(--border);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .voice-btn:hover { filter: brightness(1.03); }
+
+  /* ---------- Filters / search ---------- */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    align-items: center;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex: 1;
+    scrollbar-width: none;
+  }
+  .filter-group::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  :root[data-theme="dark"] .chip[aria-pressed="true"],
+  :root:not([data-theme="light"]) .chip[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+
+  .search-btn {
+    flex-shrink: 0;
+  }
+
+  /* ---------- List switcher ---------- */
+  .list-switcher {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 14px;
+    scrollbar-width: none;
+  }
+  .list-switcher::-webkit-scrollbar { display: none; }
+  .list-chip {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .list-chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  :root[data-theme="dark"] .list-chip[aria-pressed="true"],
+  :root:not([data-theme="light"]) .list-chip[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+  .list-chip-add { color: var(--accent); font-weight: 600; border-style: dashed; }
+
+  .type-filter-select {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 120px;
+  }
+
+  .search-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    margin-bottom: 14px;
+  }
+  .search-bar.open { display: flex; }
+  .search-bar input {
+    border: none;
+    background: transparent;
+    flex: 1;
+    outline: none;
+  }
+  .search-bar svg { width: 16px; height: 16px; color: var(--ink-faint); flex-shrink: 0; }
+  .search-clear { color: var(--ink-faint); background: none; border: none; padding: 2px; }
+
+  /* ---------- Sections ---------- */
+  .section {
+    margin-bottom: 18px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .section-head h3 {
+    font-size: 14.5px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .section-count {
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+
+  .section-caret {
+    margin-left: auto;
+    color: var(--ink-faint);
+    transition: transform 0.2s ease;
+    width: 16px;
+    height: 16px;
+  }
+  .section.collapsed .section-caret { transform: rotate(-90deg); }
+  .section.collapsed .task-list { display: none; }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---------- Task card ---------- */
+  .task {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    box-shadow: var(--shadow);
+  }
+  .task.dragging { opacity: 0.5; }
+  .task.completed { background: var(--surface-2); box-shadow: none; }
+
+  .task-check {
+    width: 21px;
+    height: 21px;
+    border-radius: 7px;
+    border: 1.5px solid var(--ink-faint);
+    background: var(--surface);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .task-check svg { width: 13px; height: 13px; color: white; opacity: 0; transition: opacity 0.1s ease; }
+  .task.completed .task-check { background: var(--accent); border-color: var(--accent); }
+  .task.completed .task-check svg { opacity: 1; }
+
+  .task-body { flex: 1; min-width: 0; }
+
+  .task-title {
+    font-size: 14.5px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .task.completed .task-title {
+    text-decoration: line-through;
+    color: var(--ink-faint);
+  }
+
+  .task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge-date { background: var(--surface-2); color: var(--ink-soft); }
+  .badge-tag { background: var(--accent-soft); color: var(--accent); border: none; cursor: pointer; font: inherit; }
+  .badge-tag:hover { filter: brightness(1.05); }
+
+  .task-notes-preview {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .badge.priority-high { background: color-mix(in srgb, var(--high) 15%, transparent); color: var(--high); }
+  .badge.priority-medium { background: color-mix(in srgb, var(--medium) 15%, transparent); color: var(--medium); }
+  .badge.priority-low { background: color-mix(in srgb, var(--low) 15%, transparent); color: var(--low); }
+  .priority-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .priority-dot.priority-high { background: var(--high); }
+  .priority-dot.priority-medium { background: var(--medium); }
+  .priority-dot.priority-low { background: var(--low); }
+
+  .task-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .task-more-wrap { position: relative; }
+
+  .task-more-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    min-width: 148px;
+    z-index: 30;
+    overflow: hidden;
+    padding: 4px;
+  }
+  .task-more-menu button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 10px 10px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .task-more-menu button:hover { background: var(--surface-2); }
+  .task-more-menu button svg { width: 15px; height: 15px; color: var(--ink-faint); flex-shrink: 0; }
+  .task-more-menu button[data-action="delete"] { color: var(--danger); }
+  .task-more-menu button[data-action="delete"] svg { color: var(--danger); }
+
+  .task-actions button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .task-actions button:hover { background: var(--surface-2); color: var(--ink); }
+  .task-actions button svg { width: 16px; height: 16px; }
+  .drag-handle { cursor: grab; touch-action: none; }
+
+  /* ---------- Subtasks ---------- */
+  .subtask-toggle, .subtask-add-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: none;
+    border: none;
+    padding: 6px 0 2px;
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .subtask-add-link { color: var(--accent); font-weight: 600; }
+  .subtask-progress-bar {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .subtask-progress-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .subtask-chevron { width: 14px; height: 14px; margin-left: auto; flex-shrink: 0; transition: transform 0.15s ease; }
+  .subtask-chevron.open { transform: rotate(180deg); }
+
+  .subtask-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+    padding-left: 2px;
+  }
+  .subtask-row { display: flex; align-items: center; gap: 8px; }
+  .subtask-row.dragging { opacity: 0.5; }
+  .subtask-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid var(--ink-faint);
+    background: var(--surface);
+    flex-shrink: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .subtask-check svg { width: 13px; height: 13px; color: white; }
+  .subtask-check.checked { background: var(--accent); border-color: var(--accent); }
+  .subtask-title-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-size: 13.5px;
+    color: var(--ink);
+    padding: 3px 4px;
+    border-radius: 5px;
+  }
+  .subtask-title-input.completed { text-decoration: line-through; color: var(--ink-faint); }
+  .subtask-title-input:focus { outline: 1px solid var(--border); background: var(--bg); }
+  .subtask-delete {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .subtask-delete svg { width: 13px; height: 13px; }
+  .subtask-delete:hover { background: var(--surface-2); color: var(--danger); }
+  .subtask-add-row { display: flex; gap: 6px; margin-top: 2px; }
+  .subtask-new-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 8px;
+    background: var(--bg);
+    font-size: 13px;
+  }
+  .subtask-add-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: none;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Edit inline form ---------- */
+  .edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .edit-form input[type="text"] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+  }
+  .edit-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .edit-row select, .edit-row input[type="date"], .edit-row input[type="time"] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: var(--bg);
+    font-size: 13px;
+  }
+  .edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+  /* ---------- Empty states ---------- */
+  .empty-state {
+    text-align: center;
+    padding: 34px 20px;
+    color: var(--ink-soft);
+  }
+  .empty-state .empty-icon {
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+  .empty-state p:first-of-type {
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .empty-state p { margin: 0; font-size: 13.5px; }
+
+  /* ---------- Toast / Undo ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 12px 14px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13.5px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 60;
+    max-width: calc(100% - 40px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .toast button {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13.5px;
+    flex-shrink: 0;
+  }
+  :root[data-theme="dark"] .toast, :root:not([data-theme="light"]) .toast {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+
+  /* ---------- Celebration ---------- */
+  .celebrate {
+    text-align: center;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .celebrate span { display: block; font-weight: 400; color: var(--ink-soft); font-size: 12.5px; margin-top: 2px; }
+
+  /* ---------- Modal (Settings) ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,20,18,0.45);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 80;
+    padding: 0;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 560px) {
+    .modal-backdrop { align-items: center; }
+    .modal { border-radius: 18px; }
+  }
+  .modal h2 {
+    font-family: var(--font-display);
+    font-size: 19px;
+    margin: 0 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal h2 button { background: none; border: none; color: var(--ink-faint); width: 30px; height: 30px; }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .label { font-size: 14px; }
+  .setting-row .sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+
+  .switch {
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .switch[aria-checked="true"] { background: var(--accent-soft); border-color: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(18px); background: var(--accent); }
+
+  .kbd-list { font-size: 13px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 8px; }
+  .kbd-list div { display: flex; justify-content: space-between; }
+  kbd {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: var(--font-body);
+  }
+
+  .badge-soon {
+    background: var(--surface-2);
+    color: var(--ink-faint);
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .about-text { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+
+  @media (min-width: 640px) {
+    .app { padding-top: 40px; }
+  }
+
+  /* ---------- Voice modal ---------- */
+  .voice-modal .modal { max-width: 520px; }
+
+  .voice-state { display: none; }
+  .voice-state.active { display: block; }
+
+  .voice-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 18px 6px 8px;
+  }
+
+  .mic-orb {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .mic-orb svg { width: 30px; height: 30px; }
+  .mic-orb::before, .mic-orb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    opacity: 0;
+  }
+  .mic-orb.listening::before { animation: pulse-ring 1.8s ease-out infinite; }
+  .mic-orb.listening::after { animation: pulse-ring 1.8s ease-out 0.6s infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .mic-orb.listening::before, .mic-orb.listening::after { animation: none; }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
+
+  .voice-status-text {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+
+  .voice-timer {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin: 0 0 20px;
+  }
+
+  .voice-live-transcript {
+    width: 100%;
+    min-height: 40px;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    font-style: italic;
+    padding: 0 4px;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+
+  .voice-visual .btn { width: 100%; justify-content: center; }
+
+  .voice-error-icon { font-size: 26px; margin-bottom: 10px; }
+  .voice-fallback textarea {
+    width: 100%;
+    min-height: 90px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    resize: vertical;
+    margin-bottom: 12px;
+  }
+  .voice-fallback p, .voice-error p {
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    margin: 0 0 14px;
+    text-align: center;
+  }
+  .voice-btn-row { display: flex; gap: 8px; }
+  .voice-btn-row .btn { flex: 1; justify-content: center; }
+
+  .review-transcript {
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+  .review-transcript span { font-weight: 600; font-style: normal; color: var(--ink); display: block; margin-bottom: 3px; font-size: 11.5px; text-transform: none; }
+
+  .review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .review-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 11px;
+    background: var(--surface);
+  }
+  .review-card-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .review-card-top input[type="text"] {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 9px;
+    background: var(--bg);
+    font-size: 14px;
+  }
+  .review-card-top button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+  .review-card-top button:hover { background: var(--surface-2); color: var(--danger); }
+  .review-card-top button svg { width: 16px; height: 16px; }
+  .review-card-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .review-card-row select, .review-card-row input[type="date"], .review-card-row input[type="time"] {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 5px 7px;
+    background: var(--bg);
+    font-size: 12.5px;
+  }
+  .review-no-tasks {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    padding: 20px 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <h1>SalafiScope Task</h1>
+      <p>Plan your day. Speak your tasks. Get things done.</p>
+    </div>
+    <button class="icon-btn" id="install-btn" aria-label="Install SalafiScope Task as an app" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+    </button>
+    <button class="icon-btn" id="settings-btn" aria-label="Open settings" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="list-switcher" id="list-switcher"></div>
+
+  <div class="greeting-card">
+    <h2 id="greeting-text">Good day!</h2>
+    <p class="greeting-sub" id="greeting-sub">You're all clear for today.</p>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+    <p class="greeting-sub" id="estimate-sub" style="margin:6px 0 0;" hidden></p>
+    <div class="stat-strip">
+      <div class="stat"><b id="stat-total">0</b><span>Total</span></div>
+      <div class="stat"><b id="stat-remaining">0</b><span>Remaining</span></div>
+      <div class="stat"><b id="stat-completed">0</b><span>Completed</span></div>
+      <div class="stat"><b id="stat-high">0</b><span>High priority</span></div>
+    </div>
+    <button type="button" id="open-daily-review-btn" class="subtask-add-link" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);width:100%;justify-content:center;text-align:center;">Review today &rarr;</button>
+  </div>
+
+  <div id="celebrate-banner" class="celebrate" hidden>
+    🎉 Day complete!
+    <span>You finished everything on today's list.</span>
+  </div>
+
+  <div class="add-task-card">
+    <form class="add-task-row" id="add-task-form">
+      <label for="task-input" class="sr-only">Add a task</label>
+      <input type="text" id="task-input" placeholder="Add a task&hellip; e.g. Study hematology tomorrow 7pm #exam high" autocomplete="off">
+      <button type="submit" class="btn btn-primary" aria-label="Add task">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Add</span>
+      </button>
+    </form>
+    <div class="voice-row">
+      <button class="voice-btn" id="voice-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+        Add tasks by voice
+        <span class="badge-soon">Stage 2</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-group" role="group" aria-label="Filter tasks">
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="active" aria-pressed="false">Active</button>
+      <button class="chip" data-filter="completed" aria-pressed="false">Completed</button>
+      <button class="chip" data-filter="high" aria-pressed="false">High priority</button>
+    </div>
+    <select class="type-filter-select" id="type-filter" aria-label="Filter by type">
+      <option value="">All types</option>
+    </select>
+    <button class="icon-btn search-btn" id="search-toggle" aria-label="Search tasks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    </button>
+  </div>
+
+  <div class="search-bar" id="search-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="search-input" placeholder="Search tasks&hellip;" aria-label="Search tasks">
+    <button class="search-clear" id="search-clear" aria-label="Clear search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div id="sections-root"></div>
+
+  <div class="empty-state" id="global-empty" hidden>
+    <div class="empty-icon">🌿</div>
+    <p id="empty-title">You're all caught up!</p>
+    <p id="empty-sub">Add a task or tell SalafiScope Task what you need to do.</p>
+  </div>
+
+</div>
+
+<div class="toast" id="undo-toast" role="status">
+  <span id="undo-text">Task deleted</span>
+  <button id="undo-btn">Undo</button>
+</div>
+
+<div class="modal-backdrop" id="settings-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <h2 id="settings-title">Settings
+      <button id="settings-close" aria-label="Close settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Dark mode</div>
+        <div class="sub">Follows your system by default</div>
+      </div>
+      <button class="switch" id="theme-switch" role="switch" aria-checked="false" aria-label="Toggle dark mode"></button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Reminders</div>
+        <div class="sub" id="reminder-sub">Notify me when a task's due time arrives</div>
+      </div>
+      <button class="switch" id="reminder-switch" role="switch" aria-checked="false" aria-label="Toggle due-time reminders"></button>
+    </div>
+
+    <div class="setting-row" style="display:block;">
+      <div class="label" style="margin-bottom:4px;">Background alarms <span class="badge-soon">Needs setup</span></div>
+      <div class="sub" style="margin-bottom:10px;">Fires a real alarm even when the app is fully closed, using a small free server you deploy once — see the push-server README that came with this app.</div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+        <input type="url" id="push-backend-url" placeholder="https://your-project.vercel.app" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--bg); width:100%;">
+        <input type="text" id="push-backend-secret" placeholder="Secret (only if you set APP_SECRET)" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--bg); width:100%;">
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div class="sub" id="push-status-sub" style="margin:0;">Off — set this up first</div>
+        <button class="switch" id="push-switch" role="switch" aria-checked="false" aria-label="Toggle background alarms"></button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Install as an app</div>
+        <div class="sub" id="install-sub">Checking&hellip;</div>
+      </div>
+      <button class="btn btn-ghost" id="install-settings-btn" hidden>Install</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Voice recognition</div>
+        <div class="sub" id="voice-support-sub">Checking&hellip;</div>
+      </div>
+      <span class="badge-soon" id="voice-support-badge">&mdash;</span>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Lists</div>
+        <div class="sub" id="lists-summary">1 list</div>
+      </div>
+      <button class="btn btn-ghost" id="open-lists-btn" type="button">Manage</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Daily Review</div>
+        <div class="sub">See today at a glance and decide what to do with what's left</div>
+      </div>
+      <button class="btn btn-ghost" id="open-daily-review-settings-btn" type="button">View</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Insights</div>
+        <div class="sub">Completion trends, streaks, and where your time is going</div>
+      </div>
+      <button class="btn btn-ghost" id="open-insights-btn" type="button">View</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Focus timer</div>
+        <div class="sub">Run a timed study session, optionally against a task</div>
+      </div>
+      <button class="btn btn-ghost" id="open-focus-btn" type="button">Start</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Auto-complete parent tasks</div>
+        <div class="sub">When all subtasks are checked off, complete the task automatically instead of asking</div>
+      </div>
+      <button class="switch" id="auto-complete-switch" role="switch" aria-checked="false" aria-label="Toggle automatic parent completion"></button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Archived &amp; deleted tasks</div>
+        <div class="sub" id="archive-trash-summary">0 archived · 0 in trash</div>
+      </div>
+      <button class="btn btn-ghost" id="open-archive-btn" type="button">View</button>
+    </div>
+
+    <div class="setting-row">
+      <div class="label">Clear completed tasks</div>
+      <button class="btn btn-ghost" id="clear-completed-btn">Clear</button>
+    </div>
+
+    <div class="setting-row">
+      <div class="label">Clear all tasks</div>
+      <button class="btn btn-danger" id="clear-all-btn">Clear all</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Export your data</div>
+        <div class="sub">Download everything — tasks, lists, and settings — as a JSON file</div>
+      </div>
+      <button class="btn btn-ghost" id="export-data-btn" type="button">Export</button>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">Import data</div>
+        <div class="sub">Add tasks and lists from a previously exported file</div>
+      </div>
+      <button class="btn btn-ghost" id="import-data-btn" type="button">Choose file</button>
+      <input type="file" id="import-data-input" accept="application/json,.json" hidden>
+    </div>
+
+    <div class="setting-row" style="display:block;">
+      <div class="label" style="margin-bottom:10px;">Keyboard shortcuts</div>
+      <div class="kbd-list">
+        <div><span>Add task</span><kbd>Enter</kbd></div>
+        <div><span>Cancel editing</span><kbd>Esc</kbd></div>
+        <div><span>Focus search</span><kbd>Ctrl/Cmd + K</kbd></div>
+        <div><span>New task</span><kbd>Ctrl/Cmd + N</kbd></div>
+      </div>
+    </div>
+
+    <div class="setting-row" style="display:block;">
+      <div class="label" style="margin-bottom:6px;">About SalafiScope Task</div>
+      <p class="about-text">A calm, focused task manager for planning your day by typing or by speaking. Version 1 &middot; your data stays on this device. Voice recordings are never saved &mdash; only the resulting tasks. Reminders fire while SalafiScope Task is open (in a tab or as an installed app) &mdash; a true alarm that works with the app fully closed would need a push server, which this static app doesn't have.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="archive-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="archive-title">
+    <h2 id="archive-title"><span>Archived &amp; Trash</span>
+      <button id="archive-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+    <div class="toolbar" style="margin-bottom:12px;">
+      <div class="filter-group" role="group" aria-label="Archive or trash">
+        <button class="chip" data-archive-tab="archived" aria-pressed="true">Archived</button>
+        <button class="chip" data-archive-tab="trash" aria-pressed="false">Trash</button>
+      </div>
+    </div>
+    <div id="archive-trash-list" class="review-list" style="max-height:52vh;"></div>
+    <div id="empty-trash-row" class="voice-btn-row" style="margin-top:12px;" hidden>
+      <button class="btn btn-danger" id="empty-trash-btn" type="button" style="width:100%;justify-content:center;">Empty Trash permanently</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="lists-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lists-title">
+    <h2 id="lists-title"><span>Manage Lists</span>
+      <button id="lists-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+    <div id="lists-manage-list" class="review-list" style="max-height:45vh;"></div>
+    <div class="voice-btn-row" style="margin-top:12px;">
+      <input type="text" id="new-list-input" placeholder="New list name…" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg);">
+      <button class="btn btn-primary" id="add-list-btn" type="button">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="daily-review-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="daily-review-title">
+    <h2 id="daily-review-title"><span>Daily Review</span>
+      <button id="daily-review-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+    <div class="stat-strip" id="daily-review-stats" style="border-top:none;padding-top:0;margin-top:0;margin-bottom:16px;"></div>
+    <div id="daily-review-list" class="review-list" style="max-height:48vh;"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="insights-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="insights-title">
+    <h2 id="insights-title"><span>Insights</span>
+      <button id="insights-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+    <div id="insights-body"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="focus-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="focus-title">
+    <h2 id="focus-title"><span>Focus timer</span>
+      <button id="focus-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+
+    <div class="voice-state active" id="focus-state-setup">
+      <div style="margin-bottom:14px;">
+        <label class="sr-only" for="focus-task-select">Task (optional)</label>
+        <select id="focus-task-select" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--bg);margin-bottom:10px;">
+          <option value="">No specific task</option>
+        </select>
+        <div class="edit-row" style="margin-bottom:0;">
+          <button type="button" class="btn btn-ghost focus-duration-btn" data-minutes="25">25 min</button>
+          <button type="button" class="btn btn-ghost focus-duration-btn" data-minutes="50">50 min</button>
+          <input type="number" id="focus-custom-minutes" min="1" max="180" placeholder="Custom" style="width:80px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg);">
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="focus-start-btn" style="width:100%;justify-content:center;">Start focus session</button>
+    </div>
+
+    <div class="voice-state" id="focus-state-running">
+      <div class="voice-visual">
+        <p class="voice-status-text" id="focus-running-label">Focusing…</p>
+        <p class="voice-timer" id="focus-countdown" style="font-size:34px;">25:00</p>
+        <div class="voice-btn-row" style="width:100%;">
+          <button type="button" class="btn btn-ghost" id="focus-pause-btn">Pause</button>
+          <button type="button" class="btn btn-danger" id="focus-stop-btn">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="voice-state" id="focus-state-outcome">
+      <div class="voice-visual">
+        <p class="voice-status-text" id="focus-outcome-label">Session ended</p>
+        <p id="focus-outcome-detail" style="color:var(--ink-soft);font-size:13.5px;text-align:center;margin:0 0 16px;"></p>
+        <div class="voice-btn-row" style="width:100%;margin-bottom:8px;">
+          <button type="button" class="btn btn-primary" id="focus-log-completed-btn">Completed</button>
+          <button type="button" class="btn btn-ghost" id="focus-log-partial-btn">Partially completed</button>
+        </div>
+        <div class="voice-btn-row" style="width:100%;">
+          <button type="button" class="btn btn-ghost" id="focus-continue-btn">Continue</button>
+          <button type="button" class="btn btn-ghost" id="focus-discard-btn">Discard, don't log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop voice-modal" id="voice-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="voice-title">
+    <h2 id="voice-title"><span id="voice-title-text">Add tasks by voice</span>
+      <button id="voice-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </h2>
+
+    <!-- State: recording -->
+    <div class="voice-state" id="voice-state-recording">
+      <div class="voice-visual">
+        <div class="mic-orb" id="mic-orb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+        </div>
+        <p class="voice-status-text" id="voice-status-text">Listening&hellip;</p>
+        <p class="voice-timer" id="voice-timer">00:00</p>
+        <p class="voice-live-transcript" id="voice-live-transcript"></p>
+        <button class="btn btn-primary" id="voice-stop-btn" type="button">Stop recording</button>
+      </div>
+    </div>
+
+    <!-- State: error / no speech / permission -->
+    <div class="voice-state" id="voice-state-error">
+      <div class="voice-visual voice-error">
+        <div class="voice-error-icon" id="voice-error-icon">🎙️</div>
+        <p class="voice-status-text" id="voice-error-title">We didn't catch anything</p>
+        <p id="voice-error-detail">Try again, or type your tasks instead.</p>
+        <div class="voice-btn-row">
+          <button class="btn btn-ghost" id="voice-retry-btn" type="button">Try again</button>
+          <button class="btn btn-primary" id="voice-switch-text-btn" type="button">Type instead</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: text fallback (unsupported browser or manual switch) -->
+    <div class="voice-state voice-fallback" id="voice-state-fallback">
+      <p id="voice-fallback-msg">Voice recognition isn't available in this browser. Type what you'd like to do, and SalafiScope Task will split it into tasks for you.</p>
+      <textarea id="voice-fallback-text" placeholder="e.g. Today I need to study hematology for two hours, call my supervisor, and revise the coagulation notes."></textarea>
+      <button class="btn btn-primary" id="voice-fallback-extract-btn" type="button" style="width:100%;justify-content:center;">Find tasks in this text</button>
+    </div>
+
+    <!-- State: review extracted tasks -->
+    <div class="voice-state" id="voice-state-review">
+      <div class="review-transcript">
+        <span>Transcript</span>
+        <span id="review-transcript-text"></span>
+      </div>
+      <div class="review-list" id="review-list"></div>
+      <div class="voice-btn-row">
+        <button class="btn btn-ghost" id="review-cancel-btn" type="button">Cancel</button>
+        <button class="btn btn-primary" id="review-add-btn" type="button">Add all tasks</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============ State & storage ============ */
+  const STORAGE_KEY = 'salafiscope_tasks_v1';
+  const THEME_KEY = 'salafiscope_theme_v1';
+  const LISTS_KEY = 'salafiscope_lists_v1';
+  let tasks = [];
+  let _activeScopeCache = null;
+  let lists = [];
+  let currentListId = null; // null = "All Lists"
+  let currentTypeFilter = '';
+  let currentFilter = 'all';
+  let searchQuery = '';
+  let lastDeleted = null;
+  let undoTimer = null;
+  let dragSourceId = null;
+  const expandedSubtaskIds = new Set();
+  let dragSubtaskSource = null;
+  let autoCompleteParent = false;
+  const AUTO_COMPLETE_KEY = 'salafiscope_auto_complete_parent_v1';
+
+  const TASK_TYPES = [
+    { value: '', label: 'No type' },
+    { value: 'study', label: 'Study' },
+    { value: 'practical', label: 'Practical' },
+    { value: 'clinical', label: 'Clinical/Laboratory' },
+    { value: 'research', label: 'Research' },
+    { value: 'assignment', label: 'Assignment' },
+    { value: 'exam', label: 'Exam Preparation' },
+    { value: 'reading', label: 'Reading' },
+    { value: 'work', label: 'Work' },
+    { value: 'islamic', label: 'Islamic Studies' },
+    { value: 'coding', label: 'IT / Coding' },
+    { value: 'personal', label: 'Personal' },
+    { value: 'other', label: 'Other' }
+  ];
+  function typeLabel(v) {
+    const f = TASK_TYPES.find(function (x) { return x.value === v; });
+    return f ? f.label : '';
+  }
+
+  const DURATION_PRESETS = [
+    { value: '', label: 'No estimate' },
+    { value: '15', label: '15 min' },
+    { value: '30', label: '30 min' },
+    { value: '45', label: '45 min' },
+    { value: '60', label: '1 hour' },
+    { value: '90', label: '1.5 hours' },
+    { value: '120', label: '2 hours' }
+  ];
+  function formatDuration(mins) {
+    if (!mins) return '';
+    if (mins < 60) return mins + ' min';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m) return h + 'h ' + m + 'm';
+    return h + (h === 1 ? ' hour' : ' hours');
+  }
+  function durationSelectOptionsHTML(selectedMinutes) {
+    const selStr = selectedMinutes ? String(selectedMinutes) : '';
+    const preset = DURATION_PRESETS.some(function (p) { return p.value === selStr; });
+    let html = DURATION_PRESETS.map(function (p) {
+      return '<option value="' + p.value + '"' + (selStr === p.value ? ' selected' : '') + '>' + p.label + '</option>';
+    }).join('');
+    if (!preset && selStr) {
+      html += '<option value="' + selStr + '" selected>' + formatDuration(selectedMinutes) + '</option>';
+    }
+    return html;
+  }
+
+  function uidList() {
+    return 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function loadLists() {
+    try {
+      const raw = localStorage.getItem(LISTS_KEY);
+      lists = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.warn('Could not read saved lists, starting fresh.', e);
+      lists = [];
+    }
+    if (lists.length === 0) {
+      lists.push({ id: 'general', name: 'General', createdAt: Date.now(), order: 0 });
+      saveLists();
+    }
+  }
+
+  function saveLists() {
+    try {
+      localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+    } catch (e) {
+      console.warn('Could not save lists.', e);
+      showToast('Could not save your lists — your device storage may be full.', false);
+    }
+  }
+
+  function defaultListId() {
+    return lists.length ? lists[0].id : 'general';
+  }
+
+  function getListName(id) {
+    const l = lists.find(function (x) { return x.id === id; });
+    return l ? l.name : 'General';
+  }
+
+  function createList(name) {
+    const clean = (name || '').trim();
+    if (!clean) return null;
+    const list = { id: uidList(), name: clean, createdAt: Date.now(), order: lists.length };
+    lists.push(list);
+    saveLists();
+    return list;
+  }
+
+  function renameList(id, name) {
+    const l = lists.find(function (x) { return x.id === id; });
+    const clean = (name || '').trim();
+    if (!l || !clean) return;
+    l.name = clean;
+    saveLists();
+  }
+
+  function deleteList(id) {
+    if (lists.length <= 1) { showToast('You need at least one list.', false); return false; }
+    const idx = lists.findIndex(function (x) { return x.id === id; });
+    if (idx === -1) return false;
+    const deletedName = lists[idx].name;
+    lists.splice(idx, 1);
+    saveLists();
+    const fallback = defaultListId();
+    let reassigned = 0;
+    tasks.forEach(function (t) {
+      if (t.listId === id) { t.listId = fallback; t.updatedAt = Date.now(); reassigned++; }
+    });
+    if (reassigned) saveTasks();
+    if (currentListId === id) currentListId = null;
+    showToast('Deleted "' + deletedName + '"' + (reassigned ? ' — its tasks moved to ' + getListName(fallback) + '.' : '.'), false);
+    return true;
+  }
+
+  function taskCountForList(id) {
+    return tasks.filter(function (t) { return t.listId === id && !t.deleted && !t.archived; }).length;
+  }
+
+  function uid() {
+    return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function migrateTask(t) {
+    // Backfills fields introduced for safer completion/deletion handling.
+    // Existing fields are never overwritten — only missing ones are added,
+    // so upgrading never alters a task's actual state.
+    if (typeof t.completed !== 'boolean') t.completed = false;
+    if (!('completedAt' in t)) t.completedAt = t.completed ? (t.createdAt || Date.now()) : null;
+    if (!('archived' in t)) t.archived = false;
+    if (!('archivedAt' in t)) t.archivedAt = null;
+    if (!('deleted' in t)) t.deleted = false;
+    if (!('deletedAt' in t)) t.deletedAt = null;
+    if (!('updatedAt' in t)) t.updatedAt = t.createdAt || Date.now();
+    if (!('notified' in t)) t.notified = false;
+    if (!Array.isArray(t.subtasks)) t.subtasks = [];
+    if (!t.listId) t.listId = defaultListId();
+    if (!('type' in t)) t.type = null;
+    if (!Array.isArray(t.tags)) t.tags = [];
+    if (!('recurrence' in t)) t.recurrence = null;
+    if (!('spawnedNextId' in t)) t.spawnedNextId = null;
+    if (!('estimatedMinutes' in t)) t.estimatedMinutes = null;
+    if (!('actualMinutes' in t)) t.actualMinutes = 0;
+    if (!('notes' in t)) t.notes = '';
+    return t;
+  }
+
+  function loadTasks() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      tasks = raw ? JSON.parse(raw).map(migrateTask) : [];
+    } catch (e) {
+      console.warn('Could not read saved tasks, starting fresh.', e);
+      tasks = [];
+    }
+    _activeScopeCache = null;
+  }
+
+  function saveTasks() {
+    _activeScopeCache = null; // every mutation path calls this before any read, so this is the one safe invalidation point
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch (e) {
+      console.warn('Could not save tasks (storage may be full or unavailable).', e);
+      showToast('Could not save — your device storage may be full.', false);
+    }
+  }
+
+  /* ============ Task CRUD ============ */
+  // Data-safety model: a task's stored record is the single source of truth
+  // (never the DOM). completed / archived / deleted are independent flags —
+  // completing a task never deletes it, and deleting a task never destroys
+  // its data; it's just hidden from the normal views until restored.
+  function activeScope() {
+    // A single render cycle calls this ~5-6 times (renderTasks, updateStatistics,
+    // calculateProgress, currentListScope, renderListSwitcher, the archive/trash
+    // summary); caching avoids re-filtering the whole task list that many times
+    // for every single click. Safe because saveTasks() — called by every path
+    // that changes completed/archived/deleted — always runs before the next read.
+    if (_activeScopeCache === null) {
+      _activeScopeCache = tasks.filter(function (t) { return !t.deleted && !t.archived; });
+    }
+    return _activeScopeCache;
+  }
+
+  function addTask(title, opts) {
+    opts = opts || {};
+    const clean = (title || '').trim();
+    if (!clean) return null;
+    const now = Date.now();
+    const task = {
+      id: uid(),
+      title: clean,
+      completed: false,
+      completedAt: null,
+      priority: opts.priority || 'medium',
+      date: opts.date || null,   // 'YYYY-MM-DD' or null
+      time: opts.time || null,   // 'HH:MM' or null
+      order: tasks.length,
+      createdAt: now,
+      updatedAt: now,
+      archived: false,
+      archivedAt: null,
+      deleted: false,
+      deletedAt: null,
+      notified: false,
+      subtasks: [],
+      listId: opts.listId || currentListId || defaultListId(),
+      type: opts.type || null,
+      tags: Array.isArray(opts.tags) ? opts.tags : [],
+      recurrence: opts.recurrence || null,
+      spawnedNextId: null,
+      estimatedMinutes: opts.estimatedMinutes || null,
+      actualMinutes: 0,
+      notes: opts.notes || ''
+    };
+    tasks.push(task);
+    saveTasks();
+    renderAll();
+    syncTaskPushSchedule(task);
+    return task;
+  }
+
+  function editTask(id, changes) {
+    const t = tasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    if (('date' in changes) || ('time' in changes)) t.notified = false;
+    Object.assign(t, changes);
+    t.updatedAt = Date.now();
+    saveTasks();
+    renderAll();
+    syncTaskPushSchedule(t);
+  }
+
+  function deleteTask(id) {
+    const t = tasks.find(function (x) { return x.id === id; });
+    if (!t || t.deleted) return;
+    lastDeleted = { id: id };
+    t.deleted = true;
+    t.deletedAt = Date.now();
+    t.updatedAt = t.deletedAt;
+    saveTasks();
+    renderAll();
+    unscheduleTaskPush(id);
+    showUndoToast('Task deleted');
+  }
+
+  function undoDelete() {
+    if (!lastDeleted) return;
+    const t = tasks.find(function (x) { return x.id === lastDeleted.id; });
+    lastDeleted = null;
+    if (!t) return;
+    t.deleted = false;
+    t.deletedAt = null;
+    t.updatedAt = Date.now();
+    saveTasks();
+    renderAll();
+    hideToast();
+    syncTaskPushSchedule(t);
+  }
+
+  function completeTask(id, value) {
+    const t = tasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    const wasCompleted = t.completed;
+    t.completed = (value === undefined) ? !t.completed : value;
+    t.completedAt = t.completed ? Date.now() : null;
+    if (!t.completed) t.notified = false;
+    t.updatedAt = Date.now();
+
+    if (t.completed && !wasCompleted && t.recurrence && t.recurrence.frequency) {
+      // Advance the series: this row becomes permanent history, and a new
+      // row (fresh subtasks, no completion state) represents what's next.
+      const nextDate = computeNextDueDate(t.date, t.recurrence);
+      if (nextDate) {
+        const next = spawnNextOccurrence(t, nextDate);
+        t.spawnedNextId = next.id;
+        syncTaskPushSchedule(next);
+      }
+    } else if (!t.completed && t.spawnedNextId) {
+      // Undoing completion: remove the next occurrence only if it's still
+      // untouched, so we never destroy work the user has since done on it.
+      const spawned = tasks.find(function (x) { return x.id === t.spawnedNextId; });
+      if (spawned && !spawned.completed && !spawned.deleted && !spawned.archived) {
+        unscheduleTaskPush(spawned.id);
+        tasks = tasks.filter(function (x) { return x.id !== spawned.id; });
+      }
+      t.spawnedNextId = null;
+    }
+
+    saveTasks();
+    renderAll();
+    syncTaskPushSchedule(t);
+  }
+
+  function reorderTask(sourceId, targetId) {
+    const from = tasks.findIndex(function (x) { return x.id === sourceId; });
+    const to = tasks.findIndex(function (x) { return x.id === targetId; });
+    if (from === -1 || to === -1 || from === to) return;
+    const arr = tasks.slice();
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    arr.forEach(function (t, i) { t.order = i; });
+    tasks = arr;
+    saveTasks();
+    renderAll();
+  }
+
+  function clearCompleted() {
+    const now = Date.now();
+    const affected = tasks.filter(function (t) { return t.completed && !t.deleted; });
+    affected.forEach(function (t) { t.deleted = true; t.deletedAt = now; t.updatedAt = now; });
+    saveTasks();
+    renderAll();
+    affected.forEach(function (t) { unscheduleTaskPush(t.id); });
+  }
+
+  function clearAll() {
+    const now = Date.now();
+    const affected = activeScope();
+    affected.forEach(function (t) { t.deleted = true; t.deletedAt = now; t.updatedAt = now; });
+    saveTasks();
+    renderAll();
+    affected.forEach(function (t) { unscheduleTaskPush(t.id); });
+  }
+
+  /* ---------- Archive & Trash ---------- */
+  // Three independent states: completed, archived, deleted. Archiving and
+  // deleting both just hide a task from the normal views — nothing is
+  // actually destroyed until "Delete permanently" or "Empty Trash".
+  function archiveTask(id) {
+    const t = tasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    t.archived = true;
+    t.archivedAt = Date.now();
+    t.updatedAt = t.archivedAt;
+    saveTasks();
+    renderAll();
+    unscheduleTaskPush(id);
+    showToast('Task archived.', false);
+  }
+
+  function restoreFromArchive(id) {
+    const t = tasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    t.archived = false;
+    t.archivedAt = null;
+    t.updatedAt = Date.now();
+    saveTasks();
+    renderAll();
+    syncTaskPushSchedule(t);
+  }
+
+  function restoreFromTrash(id) {
+    const t = tasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    t.deleted = false;
+    t.deletedAt = null;
+    t.updatedAt = Date.now();
+    saveTasks();
+    renderAll();
+    syncTaskPushSchedule(t);
+  }
+
+  function permanentlyDeleteTask(id) {
+    const idx = tasks.findIndex(function (x) { return x.id === id; });
+    if (idx === -1) return;
+    tasks.splice(idx, 1);
+    saveTasks();
+    renderAll();
+  }
+
+  function emptyTrash() {
+    tasks = tasks.filter(function (t) { return !t.deleted; });
+    saveTasks();
+    renderAll();
+  }
+
+  /* ---------- Subtasks ---------- */
+  // A parent task's completion is independent of its subtasks — completing
+  // the parent never touches them, and finishing all subtasks only offers
+  // (or, if enabled, applies) parent completion; it never forces it.
+  function getSubtaskProgress(t) {
+    const subs = t.subtasks || [];
+    const total = subs.length;
+    const done = subs.filter(function (s) { return s.completed; }).length;
+    return { done: done, total: total };
+  }
+
+  function addSubtask(parentId, title) {
+    const t = tasks.find(function (x) { return x.id === parentId; });
+    const clean = (title || '').trim();
+    if (!t || !clean) return;
+    if (!Array.isArray(t.subtasks)) t.subtasks = [];
+    t.subtasks.push({
+      id: uid(), title: clean, completed: false, completedAt: null,
+      order: t.subtasks.length, createdAt: Date.now()
+    });
+    t.updatedAt = Date.now();
+    saveTasks();
+  }
+
+  function editSubtask(parentId, subId, changes) {
+    const t = tasks.find(function (x) { return x.id === parentId; });
+    if (!t || !t.subtasks) return;
+    const s = t.subtasks.find(function (x) { return x.id === subId; });
+    if (!s) return;
+    Object.assign(s, changes);
+    t.updatedAt = Date.now();
+    saveTasks();
+  }
+
+  function deleteSubtask(parentId, subId) {
+    const t = tasks.find(function (x) { return x.id === parentId; });
+    if (!t || !t.subtasks) return;
+    t.subtasks = t.subtasks.filter(function (x) { return x.id !== subId; });
+    t.updatedAt = Date.now();
+    saveTasks();
+    renderAll();
+  }
+
+  function reorderSubtask(parentId, sourceId, targetId) {
+    const t = tasks.find(function (x) { return x.id === parentId; });
+    if (!t || !t.subtasks) return;
+    const from = t.subtasks.findIndex(function (x) { return x.id === sourceId; });
+    const to = t.subtasks.findIndex(function (x) { return x.id === targetId; });
+    if (from === -1 || to === -1 || from === to) return;
+    const arr = t.subtasks.slice();
+    const moved = arr.splice(from, 1)[0];
+    arr.splice(to, 0, moved);
+    arr.forEach(function (s, i) { s.order = i; });
+    t.subtasks = arr;
+    t.updatedAt = Date.now();
+    saveTasks();
+    renderAll();
+  }
+
+  function toggleSubtaskComplete(parentId, subId, value) {
+    const t = tasks.find(function (x) { return x.id === parentId; });
+    if (!t || !t.subtasks) return;
+    const s = t.subtasks.find(function (x) { return x.id === subId; });
+    if (!s) return;
+    s.completed = (value === undefined) ? !s.completed : value;
+    s.completedAt = s.completed ? Date.now() : null;
+    t.updatedAt = Date.now();
+    saveTasks();
+
+    const progress = getSubtaskProgress(t);
+    if (s.completed && progress.total > 0 && progress.done === progress.total && !t.completed) {
+      if (autoCompleteParent) {
+        completeTask(t.id, true); // saves + re-renders on its own
+        return;
+      }
+      if (window.confirm('All subtasks for "' + t.title + '" are complete. Mark the whole task as complete too?')) {
+        completeTask(t.id, true);
+        return;
+      }
+    }
+    renderAll();
+  }
+
+  /* ============ Date helpers ============ */
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  /* ---------- Recurrence ---------- */
+  function dateToStr(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function computeNextDueDate(dateStr, recurrence) {
+    if (!dateStr || !recurrence || !recurrence.frequency) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    switch (recurrence.frequency) {
+      case 'daily':
+        d.setDate(d.getDate() + 1);
+        break;
+      case 'weekdays':
+        do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6);
+        break;
+      case 'weekly':
+        d.setDate(d.getDate() + 7);
+        break;
+      case 'every_x_days':
+        d.setDate(d.getDate() + Math.max(2, recurrence.interval || 2));
+        break;
+      case 'monthly':
+        d.setMonth(d.getMonth() + 1);
+        break;
+      default:
+        return null;
+    }
+    const next = dateToStr(d);
+    if (recurrence.endDate && next > recurrence.endDate) return null;
+    return next;
+  }
+
+  function recurrenceLabel(r) {
+    if (!r || !r.frequency) return '';
+    switch (r.frequency) {
+      case 'daily': return 'Repeats daily';
+      case 'weekdays': return 'Repeats on weekdays';
+      case 'weekly': return 'Repeats weekly';
+      case 'every_x_days': return 'Repeats every ' + (r.interval || 2) + ' days';
+      case 'monthly': return 'Repeats monthly';
+      default: return '';
+    }
+  }
+
+  function spawnNextOccurrence(t, nextDate) {
+    const now = Date.now();
+    const next = {
+      id: uid(),
+      title: t.title,
+      completed: false,
+      completedAt: null,
+      priority: t.priority,
+      date: nextDate,
+      time: t.time || null,
+      order: tasks.length,
+      createdAt: now,
+      updatedAt: now,
+      archived: false,
+      archivedAt: null,
+      deleted: false,
+      deletedAt: null,
+      notified: false,
+      listId: t.listId,
+      type: t.type,
+      tags: (t.tags || []).slice(),
+      recurrence: t.recurrence,
+      spawnedNextId: null,
+      estimatedMinutes: t.estimatedMinutes || null,
+      actualMinutes: 0,
+      notes: t.notes || '',
+      // Fresh subtask state — titles/order carry over, completion does not.
+      subtasks: (t.subtasks || []).map(function (s) {
+        return { id: uid(), title: s.title, completed: false, completedAt: null, order: s.order, createdAt: now };
+      })
+    };
+    tasks.push(next);
+    return next;
+  }
+
+  function formatDateBadge(dateStr, timeStr) {
+    if (!dateStr) return timeStr ? formatTime(timeStr) : '';
+    const today = todayStr();
+    const tmrw = new Date();
+    tmrw.setDate(tmrw.getDate() + 1);
+    const tomorrowStr = tmrw.getFullYear() + '-' + String(tmrw.getMonth() + 1).padStart(2, '0') + '-' + String(tmrw.getDate()).padStart(2, '0');
+    let label;
+    if (dateStr === today) label = 'Today';
+    else if (dateStr === tomorrowStr) label = 'Tomorrow';
+    else {
+      const d = new Date(dateStr + 'T00:00:00');
+      label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    return timeStr ? (label + ' · ' + formatTime(timeStr)) : label;
+  }
+
+  function formatTime(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = ((h + 11) % 12) + 1;
+    return h12 + ':' + String(m).padStart(2, '0') + ' ' + period;
+  }
+
+  function taskSection(t) {
+    if (t.completed) return 'completed';
+    if (!t.date) return 'noDate';
+    if (t.date === todayStr()) return 'today';
+    if (t.date < todayStr()) return 'today'; // overdue surfaces with today
+    return 'upcoming';
+  }
+
+  /* ============ Filtering / searching ============ */
+  function passesFilter(t) {
+    if (currentFilter === 'active') return !t.completed;
+    if (currentFilter === 'completed') return t.completed;
+    if (currentFilter === 'high') return t.priority === 'high';
+    return true;
+  }
+
+  function passesList(t) {
+    if (currentListId === null) return true;
+    return t.listId === currentListId;
+  }
+
+  function passesType(t) {
+    if (!currentTypeFilter) return true;
+    return t.type === currentTypeFilter;
+  }
+
+  function passesSearch(t) {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase().replace(/^#/, '');
+    if (t.title.toLowerCase().indexOf(q) !== -1) return true;
+    if ((t.tags || []).some(function (tag) { return tag.toLowerCase().indexOf(q) !== -1; })) return true;
+    if (t.type && typeLabel(t.type).toLowerCase().indexOf(q) !== -1) return true;
+    if (getListName(t.listId).toLowerCase().indexOf(q) !== -1) return true;
+    if ((t.subtasks || []).some(function (s) { return s.title.toLowerCase().indexOf(q) !== -1; })) return true;
+    return false;
+  }
+
+  function currentListScope() {
+    return activeScope().filter(passesList);
+  }
+
+  function visibleTasks() {
+    return currentListScope().filter(function (t) { return passesType(t) && passesFilter(t) && passesSearch(t); });
+  }
+
+  /* ============ Rendering ============ */
+  const sectionsRoot = document.getElementById('sections-root');
+  const globalEmpty = document.getElementById('global-empty');
+  const emptyTitle = document.getElementById('empty-title');
+  const emptySub = document.getElementById('empty-sub');
+
+  const collapsedSections = {};
+
+  function iconSvg(name) {
+    const icons = {
+      edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+      trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>',
+      drag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>',
+      archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>',
+      more: '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></svg>',
+      chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>'
+    };
+    return icons[name] || '';
+  }
+
+  function relativeTimeLabel(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const now = new Date();
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (d.toDateString() === now.toDateString()) return 'today at ' + timeStr;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return 'yesterday at ' + timeStr;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' at ' + timeStr;
+  }
+
+  function subtasksBlockHTML(t) {
+    const subs = (t.subtasks || []).slice().sort(function (a, b) { return a.order - b.order; });
+    const total = subs.length;
+    const done = subs.filter(function (s) { return s.completed; }).length;
+    const expanded = expandedSubtaskIds.has(t.id);
+    const pct = total ? Math.round((done / total) * 100) : 0;
+
+    const triggerHTML = total > 0
+      ? '<button type="button" class="subtask-toggle" data-action="toggle-subtasks" aria-expanded="' + (expanded ? 'true' : 'false') + '">' +
+          '<span class="subtask-progress-bar"><span class="subtask-progress-fill" style="width:' + pct + '%"></span></span>' +
+          '<span>' + done + '/' + total + ' subtasks</span>' +
+          '<svg class="subtask-chevron' + (expanded ? ' open' : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>' +
+        '</button>'
+      : '<button type="button" class="subtask-add-link" data-action="toggle-subtasks">+ Add subtask</button>';
+
+    const rowsHTML = subs.map(function (s) {
+      return '<div class="subtask-row" draggable="true" data-sub-id="' + s.id + '">' +
+        '<button type="button" class="subtask-check' + (s.completed ? ' checked' : '') + '" data-action="toggle-sub" aria-label="' + (s.completed ? 'Mark subtask incomplete' : 'Mark subtask complete') + '">' + (s.completed ? iconSvg('check') : '') + '</button>' +
+        '<input type="text" class="subtask-title-input' + (s.completed ? ' completed' : '') + '" value="' + escapeAttr(s.title) + '" data-action="edit-sub" aria-label="Subtask title">' +
+        '<button type="button" class="subtask-delete" data-action="delete-sub" aria-label="Delete subtask">' + iconSvg('trash') + '</button>' +
+      '</div>';
+    }).join('');
+
+    return triggerHTML +
+      '<div class="subtask-list" ' + (expanded ? '' : 'hidden') + '>' +
+        rowsHTML +
+        '<div class="subtask-add-row">' +
+          '<input type="text" class="subtask-new-input" placeholder="Add a subtask…" aria-label="New subtask">' +
+          '<button type="button" class="subtask-add-btn" data-action="add-sub" aria-label="Add subtask">+</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function wireSubtasks(el, t) {
+    const toggleBtn = el.querySelector('[data-action="toggle-subtasks"]');
+    const listEl = el.querySelector('.subtask-list');
+    if (toggleBtn && listEl) {
+      toggleBtn.addEventListener('click', function () {
+        const nowExpanded = !expandedSubtaskIds.has(t.id);
+        if (nowExpanded) expandedSubtaskIds.add(t.id); else expandedSubtaskIds.delete(t.id);
+        listEl.hidden = !nowExpanded;
+        toggleBtn.setAttribute('aria-expanded', nowExpanded ? 'true' : 'false');
+        const chevron = toggleBtn.querySelector('.subtask-chevron');
+        if (chevron) chevron.classList.toggle('open', nowExpanded);
+        if (nowExpanded) {
+          const newInput = listEl.querySelector('.subtask-new-input');
+          if (newInput) newInput.focus();
+        }
+      });
+    }
+
+    el.querySelectorAll('[data-action="toggle-sub"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        toggleSubtaskComplete(t.id, btn.closest('.subtask-row').dataset.subId);
+      });
+    });
+
+    el.querySelectorAll('[data-action="edit-sub"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        const subId = input.closest('.subtask-row').dataset.subId;
+        const val = input.value.trim();
+        if (!val) { deleteSubtask(t.id, subId); return; }
+        editSubtask(t.id, subId, { title: val });
+      });
+    });
+
+    el.querySelectorAll('[data-action="delete-sub"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        deleteSubtask(t.id, btn.closest('.subtask-row').dataset.subId);
+      });
+    });
+
+    const addBtn = el.querySelector('[data-action="add-sub"]');
+    const newInput = el.querySelector('.subtask-new-input');
+    function submitNewSub() {
+      if (!newInput.value.trim()) return;
+      expandedSubtaskIds.add(t.id);
+      addSubtask(t.id, newInput.value);
+      renderAll();
+    }
+    if (addBtn) addBtn.addEventListener('click', submitNewSub);
+    if (newInput) newInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); submitNewSub(); }
+    });
+
+    el.querySelectorAll('.subtask-row').forEach(function (row) {
+      row.addEventListener('dragstart', function (e) {
+        e.stopPropagation();
+        dragSubtaskSource = { parentId: t.id, subId: row.dataset.subId };
+        row.classList.add('dragging');
+      });
+      row.addEventListener('dragend', function (e) {
+        e.stopPropagation();
+        row.classList.remove('dragging');
+      });
+      row.addEventListener('dragover', function (e) { e.preventDefault(); e.stopPropagation(); });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (dragSubtaskSource && dragSubtaskSource.parentId === t.id && dragSubtaskSource.subId !== row.dataset.subId) {
+          reorderSubtask(t.id, dragSubtaskSource.subId, row.dataset.subId);
+        }
+        dragSubtaskSource = null;
+      });
+    });
+  }
+
+  function closeAllTaskMenus() {
+    document.querySelectorAll('.task-more-menu').forEach(function (m) { m.hidden = true; });
+    document.querySelectorAll('[data-action="more"]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  document.addEventListener('click', closeAllTaskMenus);
+
+  function wireTaskMoreMenu(cardEl, t) {
+    const moreBtn = cardEl.querySelector('[data-action="more"]');
+    const moreMenu = cardEl.querySelector('.task-more-menu');
+    if (!moreBtn || !moreMenu) return;
+    moreBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const wasOpen = !moreMenu.hidden;
+      closeAllTaskMenus();
+      if (!wasOpen) {
+        moreMenu.hidden = false;
+        moreBtn.setAttribute('aria-expanded', 'true');
+      }
+    });
+    moreMenu.querySelector('[data-action="archive"]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      moreMenu.hidden = true;
+      archiveTask(t.id);
+    });
+    moreMenu.querySelector('[data-action="delete"]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      moreMenu.hidden = true;
+      deleteTask(t.id);
+    });
+  }
+
+  function renderTaskCard(t) {
+    const el = document.createElement('div');
+    el.className = 'task' + (t.completed ? ' completed' : '');
+    el.setAttribute('draggable', 'true');
+    el.dataset.id = t.id;
+
+    const dateLabel = formatDateBadge(t.date, t.time);
+    const metaLabel = t.completed
+      ? (t.completedAt ? 'Completed ' + relativeTimeLabel(t.completedAt) : 'Completed')
+      : dateLabel;
+    const listBadge = (currentListId === null) ? '<span class="badge badge-date">' + escapeHtml(getListName(t.listId)) + '</span>' : '';
+    const typeBadge = t.type ? '<span class="badge badge-date">' + escapeHtml(typeLabel(t.type)) + '</span>' : '';
+    const recurrenceBadge = t.recurrence ? '<span class="badge badge-date">🔁 ' + escapeHtml(recurrenceLabel(t.recurrence)) + '</span>' : '';
+    const durationBadge = t.estimatedMinutes ? '<span class="badge badge-date">⏱ ' + formatDuration(t.estimatedMinutes) + '</span>' : '';
+    const focusedBadge = t.actualMinutes ? '<span class="badge badge-date">🎯 ' + formatDuration(t.actualMinutes) + ' focused</span>' : '';
+    const tagBadges = (t.tags || []).map(function (tag) {
+      return '<button type="button" class="badge badge-tag" data-action="filter-tag" data-tag="' + escapeAttr(tag) + '">#' + escapeHtml(tag) + '</button>';
+    }).join('');
+
+    el.innerHTML =
+      '<button class="task-check" aria-label="' + (t.completed ? 'Mark task incomplete' : 'Mark task complete') + '" data-action="toggle">' + iconSvg('check') + '</button>' +
+      '<div class="task-body">' +
+        '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
+        '<div class="task-meta">' +
+          '<span class="badge priority-' + t.priority + '"><span class="priority-dot priority-' + t.priority + '"></span>' + capitalize(t.priority) + '</span>' +
+          (metaLabel ? '<span class="badge badge-date">' + metaLabel + '</span>' : '') +
+          listBadge + typeBadge + recurrenceBadge + durationBadge + focusedBadge + tagBadges +
+        '</div>' +
+        (t.notes && t.notes.trim() ? '<div class="task-notes-preview">📝 ' + escapeHtml(t.notes.trim()) + '</div>' : '') +
+        subtasksBlockHTML(t) +
+      '</div>' +
+      '<div class="task-actions">' +
+        '<button data-action="edit" aria-label="Edit task">' + iconSvg('edit') + '</button>' +
+        '<div class="task-more-wrap">' +
+          '<button type="button" data-action="more" aria-label="More actions" aria-haspopup="true" aria-expanded="false">' + iconSvg('more') + '</button>' +
+          '<div class="task-more-menu" role="menu" hidden>' +
+            '<button type="button" data-action="archive" role="menuitem">' + iconSvg('archive') + ' Archive</button>' +
+            '<button type="button" data-action="delete" role="menuitem">' + iconSvg('trash') + ' Delete</button>' +
+          '</div>' +
+        '</div>' +
+        '<button class="drag-handle" aria-label="Drag to reorder" data-action="none">' + iconSvg('drag') + '</button>' +
+      '</div>';
+
+    el.addEventListener('dragstart', function () {
+      dragSourceId = t.id;
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', function () {
+      el.classList.remove('dragging');
+    });
+    el.addEventListener('dragover', function (e) {
+      e.preventDefault();
+    });
+    el.addEventListener('drop', function (e) {
+      e.preventDefault();
+      if (dragSourceId && dragSourceId !== t.id) reorderTask(dragSourceId, t.id);
+      dragSourceId = null;
+    });
+
+    el.querySelector('[data-action="toggle"]').addEventListener('click', function () {
+      completeTask(t.id);
+    });
+    wireTaskMoreMenu(el, t);
+    el.querySelector('[data-action="edit"]').addEventListener('click', function () {
+      openEditForm(el, t);
+    });
+
+    el.querySelectorAll('[data-action="filter-tag"]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const tag = btn.dataset.tag;
+        searchQuery = tag;
+        const searchInputEl = document.getElementById('search-input');
+        if (searchInputEl) searchInputEl.value = tag;
+        const searchBarEl = document.getElementById('search-bar');
+        if (searchBarEl) searchBarEl.classList.add('open');
+        renderTasks();
+      });
+    });
+
+    wireSubtasks(el, t);
+
+    return el;
+  }
+
+  function openEditForm(cardEl, t) {
+    const body = cardEl.querySelector('.task-body');
+    const original = body.innerHTML;
+    body.innerHTML =
+      '<form class="edit-form">' +
+        '<input type="text" name="title" value="' + escapeAttr(t.title) + '" aria-label="Task title">' +
+        '<div class="edit-row">' +
+          '<select name="priority" aria-label="Priority">' +
+            '<option value="low"' + (t.priority === 'low' ? ' selected' : '') + '>🟢 Low</option>' +
+            '<option value="medium"' + (t.priority === 'medium' ? ' selected' : '') + '>🟡 Medium</option>' +
+            '<option value="high"' + (t.priority === 'high' ? ' selected' : '') + '>🔴 High</option>' +
+          '</select>' +
+          '<input type="date" name="date" value="' + (t.date || '') + '" aria-label="Due date">' +
+          '<input type="time" name="time" value="' + (t.time || '') + '" aria-label="Due time">' +
+          '<select name="estimatedMinutes" aria-label="Estimated time">' + durationSelectOptionsHTML(t.estimatedMinutes) + '</select>' +
+        '</div>' +
+        '<div class="edit-row">' +
+          '<select name="listId" aria-label="List">' +
+            lists.map(function (l) { return '<option value="' + l.id + '"' + (t.listId === l.id ? ' selected' : '') + '>' + escapeHtml(l.name) + '</option>'; }).join('') +
+          '</select>' +
+          '<select name="type" aria-label="Type">' +
+            TASK_TYPES.map(function (opt) { return '<option value="' + opt.value + '"' + (((t.type || '') === opt.value) ? ' selected' : '') + '>' + opt.label + '</option>'; }).join('') +
+          '</select>' +
+        '</div>' +
+        '<input type="text" name="tags" value="' + escapeAttr((t.tags || []).join(', ')) + '" placeholder="Tags, comma separated (e.g. exam, urgent)" aria-label="Tags">' +
+        '<textarea name="notes" rows="2" placeholder="Notes (optional)" aria-label="Notes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg);font:inherit;resize:vertical;">' + escapeHtml(t.notes || '') + '</textarea>' +
+        '<div class="edit-row">' +
+          '<select name="recurrenceFreq" aria-label="Repeat">' +
+            '<option value="">Does not repeat</option>' +
+            '<option value="daily"' + (t.recurrence && t.recurrence.frequency === 'daily' ? ' selected' : '') + '>Daily</option>' +
+            '<option value="weekdays"' + (t.recurrence && t.recurrence.frequency === 'weekdays' ? ' selected' : '') + '>Weekdays (Mon–Fri)</option>' +
+            '<option value="weekly"' + (t.recurrence && t.recurrence.frequency === 'weekly' ? ' selected' : '') + '>Weekly</option>' +
+            '<option value="every_x_days"' + (t.recurrence && t.recurrence.frequency === 'every_x_days' ? ' selected' : '') + '>Every few days</option>' +
+            '<option value="monthly"' + (t.recurrence && t.recurrence.frequency === 'monthly' ? ' selected' : '') + '>Monthly</option>' +
+          '</select>' +
+          '<input type="number" name="recurrenceInterval" min="2" max="365" style="width:70px;" aria-label="Repeat every N days" value="' + ((t.recurrence && t.recurrence.frequency === 'every_x_days') ? t.recurrence.interval : 2) + '"' + ((t.recurrence && t.recurrence.frequency === 'every_x_days') ? '' : ' hidden') + '>' +
+        '</div>' +
+        '<div class="edit-actions">' +
+          '<button type="button" class="btn btn-ghost" data-action="cancel">Cancel</button>' +
+          '<button type="submit" class="btn btn-primary">Save</button>' +
+        '</div>' +
+      '</form>';
+
+    const form = body.querySelector('form');
+    const titleInput = form.querySelector('[name="title"]');
+    titleInput.focus();
+    titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
+
+    form.recurrenceFreq.addEventListener('change', function () {
+      form.recurrenceInterval.hidden = form.recurrenceFreq.value !== 'every_x_days';
+    });
+
+    function cancel() { body.innerHTML = original; rebindCard(cardEl, t); }
+
+    form.querySelector('[data-action="cancel"]').addEventListener('click', cancel);
+    form.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); cancel(); }
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const newTitle = form.title.value.trim();
+      if (!newTitle) { showToast("A task can't be empty.", false); return; }
+      const tags = form.tags.value.split(',')
+        .map(function (s) { return s.trim().replace(/^#+/, '').toLowerCase(); })
+        .filter(Boolean);
+
+      const freq = form.recurrenceFreq.value;
+      let recurrence = null;
+      if (freq) {
+        recurrence = {
+          id: (t.recurrence && t.recurrence.id) || uid(),
+          frequency: freq,
+          interval: freq === 'every_x_days' ? Math.max(2, parseInt(form.recurrenceInterval.value, 10) || 2) : 1,
+          endDate: (t.recurrence && t.recurrence.endDate) || null
+        };
+      }
+      // A recurring task needs a date to anchor the schedule to — default
+      // to today rather than silently dropping the repeat setting.
+      const date = form.date.value || (freq ? todayStr() : null);
+
+      editTask(t.id, {
+        title: newTitle,
+        priority: form.priority.value,
+        date: date,
+        time: form.time.value || null,
+        listId: form.listId.value,
+        type: form.type.value || null,
+        tags: Array.from(new Set(tags)),
+        recurrence: recurrence,
+        estimatedMinutes: form.estimatedMinutes.value ? parseInt(form.estimatedMinutes.value, 10) : null,
+        notes: form.notes.value.trim()
+      });
+    });
+  }
+
+  function rebindCard(cardEl, t) {
+    cardEl.querySelector('[data-action="toggle"]').addEventListener('click', function () { completeTask(t.id); });
+    wireTaskMoreMenu(cardEl, t);
+    cardEl.querySelector('[data-action="edit"]').addEventListener('click', function () { openEditForm(cardEl, t); });
+    wireSubtasks(cardEl, t);
+  }
+
+  function renderSection(key, title, list) {
+    if (list.length === 0) return null;
+    const section = document.createElement('section');
+    section.className = 'section' + (collapsedSections[key] ? ' collapsed' : '');
+    section.innerHTML =
+      '<div class="section-head" data-key="' + key + '">' +
+        '<h3>' + title + '</h3>' +
+        '<span class="section-count">' + list.length + '</span>' +
+        '<span class="section-caret">' + iconSvg('chevron') + '</span>' +
+      '</div>' +
+      '<div class="task-list"></div>';
+    const listEl = section.querySelector('.task-list');
+    list.sort(function (a, b) { return a.order - b.order; }).forEach(function (t) {
+      listEl.appendChild(renderTaskCard(t));
+    });
+    section.querySelector('.section-head').addEventListener('click', function () {
+      collapsedSections[key] = !collapsedSections[key];
+      section.classList.toggle('collapsed');
+    });
+    return section;
+  }
+
+  function renderTasks() {
+    const visible = visibleTasks();
+    sectionsRoot.innerHTML = '';
+
+    if (currentListScope().length === 0) {
+      globalEmpty.hidden = false;
+      if (currentListId !== null) {
+        emptyTitle.textContent = 'No tasks in ' + getListName(currentListId) + ' yet.';
+        emptySub.textContent = 'Add one, or switch to another list.';
+      } else {
+        emptyTitle.textContent = "You're all caught up!";
+        emptySub.textContent = 'Add a task or tell SalafiScope Task what you need to do.';
+      }
+      return;
+    }
+
+    if (visible.length === 0) {
+      globalEmpty.hidden = false;
+      if (searchQuery) {
+        emptyTitle.textContent = 'No tasks found.';
+        emptySub.textContent = 'Try a different search term.';
+      } else if (currentFilter === 'completed') {
+        emptyTitle.textContent = 'No completed tasks yet.';
+        emptySub.textContent = 'Finished tasks will show up here.';
+      } else {
+        emptyTitle.textContent = 'Nothing matches this filter.';
+        emptySub.textContent = 'Try a different filter or add a new task.';
+      }
+      return;
+    }
+
+    globalEmpty.hidden = true;
+
+    const groups = { today: [], upcoming: [], noDate: [], completed: [] };
+    visible.forEach(function (t) { groups[taskSection(t)].push(t); });
+
+    const frag = document.createDocumentFragment();
+    const secToday = renderSection('today', 'Today', groups.today);
+    const secUpcoming = renderSection('upcoming', 'Upcoming', groups.upcoming);
+    const secNoDate = renderSection('noDate', 'No date', groups.noDate);
+    const secCompleted = renderSection('completed', 'Completed', groups.completed);
+    [secToday, secUpcoming, secNoDate, secCompleted].forEach(function (s) { if (s) frag.appendChild(s); });
+    sectionsRoot.appendChild(frag);
+  }
+
+  function calculateProgress() {
+    const todays = currentListScope().filter(function (t) { return t.date === todayStr(); });
+    const total = todays.length;
+    const done = todays.filter(function (t) { return t.completed; }).length;
+    return { total: total, done: done, pct: total ? Math.round((done / total) * 100) : 0 };
+  }
+
+  function updateStatistics() {
+    const scope = currentListScope();
+    const total = scope.length;
+    const completed = scope.filter(function (t) { return t.completed; }).length;
+    const remaining = total - completed;
+    const high = scope.filter(function (t) { return t.priority === 'high' && !t.completed; }).length;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-remaining').textContent = remaining;
+    document.getElementById('stat-completed').textContent = completed;
+    document.getElementById('stat-high').textContent = high;
+
+    const progress = calculateProgress();
+    document.getElementById('progress-fill').style.width = progress.pct + '%';
+    document.getElementById('progress-pct').textContent = progress.pct + '%';
+
+    const hour = new Date().getHours();
+    const greetingWord = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting-text').textContent = greetingWord + '!';
+
+    const remainingToday = scope.filter(function (t) { return t.date === todayStr() && !t.completed; }).length;
+    const sub = document.getElementById('greeting-sub');
+    if (progress.total === 0) {
+      sub.textContent = remaining > 0 ? 'No tasks scheduled for today.' : "You're all clear — nothing on your list.";
+    } else if (remainingToday === 0) {
+      sub.textContent = 'Every task for today is complete.';
+    } else {
+      sub.textContent = 'You have ' + remainingToday + ' task' + (remainingToday === 1 ? '' : 's') + ' remaining today.';
+    }
+
+    const celebrate = document.getElementById('celebrate-banner');
+    celebrate.hidden = !(progress.total > 0 && progress.done === progress.total);
+
+    const dueNowOrOverdue = scope.filter(function (t) { return !t.completed && t.date && t.date <= todayStr(); });
+    const estimateTotal = dueNowOrOverdue.reduce(function (sum, t) { return sum + (t.estimatedMinutes || 0); }, 0);
+    const estimateSub = document.getElementById('estimate-sub');
+    if (estimateTotal > 0) {
+      estimateSub.hidden = false;
+      estimateSub.textContent = '⏱ Estimated time for what\'s due: ' + formatDuration(estimateTotal);
+    } else {
+      estimateSub.hidden = true;
+    }
+  }
+
+  function renderAll() {
+    renderTasks();
+    updateStatistics();
+    updateArchiveTrashSummary();
+    renderListSwitcher();
+    if (archiveBackdrop.classList.contains('open')) renderArchiveTrashList();
+  }
+
+  /* ============ Utilities ============ */
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function escapeAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  }
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function focusModalClose(backdropEl) {
+    // Moves keyboard/screen-reader focus into the dialog as soon as it opens,
+    // rather than leaving it stranded on whatever was focused underneath.
+    const btn = backdropEl.querySelector('.modal h2 button');
+    if (btn) setTimeout(function () { btn.focus(); }, 0);
+  }
+
+  function getFocusableElements(container) {
+    return Array.prototype.slice.call(
+      container.querySelectorAll('a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')
+    ).filter(function (el) { return el.offsetParent !== null; });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    const openModal = document.querySelector('.modal-backdrop.open');
+    if (!openModal) return;
+    const focusables = getFocusableElements(openModal);
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !openModal.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last || !openModal.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
+  /* ============ Toasts ============ */
+  const toastEl = document.getElementById('undo-toast');
+  const toastText = document.getElementById('undo-text');
+  const undoBtn = document.getElementById('undo-btn');
+
+  function showUndoToast(message) {
+    toastText.textContent = message;
+    undoBtn.hidden = false;
+    toastEl.classList.add('show');
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideToast, 5000);
+  }
+  function showToast(message, showUndo) {
+    toastText.textContent = message;
+    undoBtn.hidden = !showUndo;
+    toastEl.classList.add('show');
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideToast, 3200);
+  }
+  function hideToast() {
+    toastEl.classList.remove('show');
+    lastDeleted = null;
+  }
+  undoBtn.addEventListener('click', undoDelete);
+
+  /* ============ Theme ============ */
+  const themeSwitch = document.getElementById('theme-switch');
+  function applyTheme(mode) {
+    if (mode === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); themeSwitch.setAttribute('aria-checked', 'true'); }
+    else if (mode === 'light') { document.documentElement.setAttribute('data-theme', 'light'); themeSwitch.setAttribute('aria-checked', 'false'); }
+    else { document.documentElement.removeAttribute('data-theme'); themeSwitch.setAttribute('aria-checked', window.matchMedia('(prefers-color-scheme: dark)').matches); }
+  }
+  function loadTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    applyTheme(saved);
+    return saved;
+  }
+  themeSwitch.addEventListener('click', function () {
+    const isDark = themeSwitch.getAttribute('aria-checked') === 'true';
+    const next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+
+  /* ============ Auto-complete-parent setting ============ */
+  const autoCompleteSwitch = document.getElementById('auto-complete-switch');
+  function loadAutoCompleteSetting() {
+    try { autoCompleteParent = localStorage.getItem(AUTO_COMPLETE_KEY) === 'on'; } catch (e) { autoCompleteParent = false; }
+    autoCompleteSwitch.setAttribute('aria-checked', autoCompleteParent ? 'true' : 'false');
+  }
+  autoCompleteSwitch.addEventListener('click', function () {
+    autoCompleteParent = !autoCompleteParent;
+    autoCompleteSwitch.setAttribute('aria-checked', autoCompleteParent ? 'true' : 'false');
+    try { localStorage.setItem(AUTO_COMPLETE_KEY, autoCompleteParent ? 'on' : 'off'); } catch (e) {}
+  });
+
+  /* ============ PWA install + service worker ============ */
+  let deferredInstallPrompt = null;
+  const installBtn = document.getElementById('install-btn');
+  const installSettingsBtn = document.getElementById('install-settings-btn');
+  const installSub = document.getElementById('install-sub');
+  let swRegistration = null;
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
+
+  function updateInstallUI() {
+    if (isStandalone()) {
+      installBtn.hidden = true;
+      installSettingsBtn.hidden = true;
+      installSub.textContent = 'Already installed on this device.';
+    } else if (deferredInstallPrompt) {
+      installBtn.hidden = false;
+      installSettingsBtn.hidden = false;
+      installSub.textContent = 'Add SalafiScope Task to your home screen for a full-screen, app-like experience.';
+    } else if (isIOS()) {
+      installBtn.hidden = true;
+      installSettingsBtn.hidden = true;
+      installSub.textContent = 'On iPhone/iPad: tap the Share icon in Safari, then "Add to Home Screen".';
+    } else {
+      installBtn.hidden = true;
+      installSettingsBtn.hidden = true;
+      installSub.textContent = "Your browser hasn't offered an install option yet — try reloading, or check your browser's menu for \"Install app\".";
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    updateInstallUI();
+  });
+
+  function triggerInstall() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.finally(function () {
+      deferredInstallPrompt = null;
+      updateInstallUI();
+    });
+  }
+  installBtn.addEventListener('click', triggerInstall);
+  installSettingsBtn.addEventListener('click', triggerInstall);
+  window.addEventListener('appinstalled', updateInstallUI);
+
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    // Service workers require being served over https (or localhost) — this
+    // silently no-ops (with a console note) if opened via a file:// path.
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      swRegistration = reg;
+    }).catch(function (err) {
+      console.warn('Service worker registration failed (this page may need to be served over https/localhost):', err);
+    });
+  }
+
+  function showAppNotification(title, options) {
+    if (swRegistration && swRegistration.showNotification) {
+      swRegistration.showNotification(title, options);
+    } else {
+      try { new Notification(title, options); } catch (e) { console.warn('Could not show notification.', e); }
+    }
+  }
+
+  updateInstallUI();
+  registerServiceWorker();
+
+  /* ============ Background alarms (Web Push) ============ */
+  // Real push notifications, sent by a small server you deploy yourself
+  // (see the salafiscope-push-server folder). This is what allows a
+  // reminder to arrive even if the app has been fully closed.
+  const PUSH_VAPID_PUBLIC_KEY = 'BK1A_3lPJ90zBvv3xTpy4LiYVkIadYmLwVFLueBrBpG0KEzoHd-o9FGEw6rUaHG79DguPjcs2sOkZRRHwtrGWfY';
+  const PUSH_CONFIG_KEY = 'salafiscope_push_config_v1';
+  const DEVICE_ID_KEY = 'salafiscope_device_id_v1';
+
+  let pushConfig = { backendUrl: '', secret: '', enabled: false };
+
+  function loadPushConfig() {
+    try {
+      const raw = localStorage.getItem(PUSH_CONFIG_KEY);
+      if (raw) pushConfig = Object.assign(pushConfig, JSON.parse(raw));
+    } catch (e) {}
+  }
+  function savePushConfig() {
+    try { localStorage.setItem(PUSH_CONFIG_KEY, JSON.stringify(pushConfig)); } catch (e) {}
+  }
+
+  function getDeviceId() {
+    let id = null;
+    try { id = localStorage.getItem(DEVICE_ID_KEY); } catch (e) {}
+    if (!id) {
+      id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem(DEVICE_ID_KEY, id); } catch (e) {}
+    }
+    return id;
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  function pushBackendFetch(path, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (pushConfig.secret) headers['X-App-Secret'] = pushConfig.secret;
+    return fetch(pushConfig.backendUrl.replace(/\/$/, '') + path, {
+      method: 'POST', headers, body: JSON.stringify(body)
+    });
+  }
+
+  async function enableBackgroundAlarms() {
+    if (!pushConfig.backendUrl) { showToast('Enter your server URL first.', false); return false; }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      showToast('Push notifications are not supported in this browser.', false);
+      return false;
+    }
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { showToast('Notification permission was not granted.', false); return false; }
+
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)
+        });
+      }
+      const res = await pushBackendFetch('/api/subscribe-device', {
+        deviceId: getDeviceId(),
+        subscription: sub.toJSON ? sub.toJSON() : sub
+      });
+      if (!res.ok) throw new Error('Server rejected the subscription — check the URL and secret.');
+
+      pushConfig.enabled = true;
+      savePushConfig();
+      tasks.forEach(function (t) { syncTaskPushSchedule(t); });
+      return true;
+    } catch (e) {
+      console.warn('Could not enable background alarms.', e);
+      showToast('Could not enable background alarms — check the server URL and secret.', false);
+      return false;
+    }
+  }
+
+  function disableBackgroundAlarms() {
+    pushConfig.enabled = false;
+    savePushConfig();
+  }
+
+  function scheduleTaskPush(t) {
+    if (!pushConfig.enabled || !pushConfig.backendUrl) return;
+    const due = getDueDateTime(t);
+    if (!due) return;
+    pushBackendFetch('/api/schedule', {
+      deviceId: getDeviceId(), taskId: t.id, title: t.title, dueAt: due.getTime()
+    }).catch(function (e) { console.warn('Could not schedule background alarm for task.', e); });
+  }
+
+  function unscheduleTaskPush(taskId) {
+    if (!pushConfig.enabled || !pushConfig.backendUrl) return;
+    pushBackendFetch('/api/unschedule', { deviceId: getDeviceId(), taskId: taskId })
+      .catch(function (e) { console.warn('Could not cancel background alarm for task.', e); });
+  }
+
+  function syncTaskPushSchedule(t) {
+    if (!t) return;
+    const due = getDueDateTime(t);
+    if (!t.completed && !t.archived && !t.deleted && due) scheduleTaskPush(t);
+    else unscheduleTaskPush(t.id);
+  }
+
+  const pushSwitch = document.getElementById('push-switch');
+  const pushUrlInput = document.getElementById('push-backend-url');
+  const pushSecretInput = document.getElementById('push-backend-secret');
+  const pushStatusSub = document.getElementById('push-status-sub');
+
+  function updatePushUI() {
+    pushUrlInput.value = pushConfig.backendUrl || '';
+    pushSecretInput.value = pushConfig.secret || '';
+    pushSwitch.setAttribute('aria-checked', pushConfig.enabled ? 'true' : 'false');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      pushStatusSub.textContent = 'Push is not supported in this browser.';
+    } else if (pushConfig.enabled) {
+      pushStatusSub.textContent = "On — you'll be alerted at a task's due time even if the app is closed.";
+    } else {
+      pushStatusSub.textContent = 'Off — deploy the push-server, enter its URL above, then turn this on.';
+    }
+  }
+
+  pushUrlInput.addEventListener('change', function () { pushConfig.backendUrl = pushUrlInput.value.trim(); savePushConfig(); });
+  pushSecretInput.addEventListener('change', function () { pushConfig.secret = pushSecretInput.value.trim(); savePushConfig(); });
+
+  pushSwitch.addEventListener('click', async function () {
+    if (pushConfig.enabled) {
+      disableBackgroundAlarms();
+      updatePushUI();
+      showToast('Background alarms turned off.', false);
+      return;
+    }
+    pushConfig.backendUrl = pushUrlInput.value.trim();
+    pushConfig.secret = pushSecretInput.value.trim();
+    savePushConfig();
+    const ok = await enableBackgroundAlarms();
+    updatePushUI();
+    if (ok) showToast('Background alarms are on.', false);
+  });
+
+  loadPushConfig();
+  updatePushUI();
+  const NOTIF_KEY = 'salafiscope_notifications_v1';
+  const notificationsSupported = ('Notification' in window);
+  const reminderSwitch = document.getElementById('reminder-switch');
+  const reminderSub = document.getElementById('reminder-sub');
+  let reminderInterval = null;
+
+  function updateReminderUI(on) {
+    reminderSwitch.setAttribute('aria-checked', on ? 'true' : 'false');
+    if (!notificationsSupported) {
+      reminderSub.textContent = "Not supported in this browser.";
+      reminderSwitch.disabled = true;
+    } else if (Notification.permission === 'denied') {
+      reminderSub.textContent = "Blocked — allow notifications for this page in your browser's site settings.";
+    } else if (on) {
+      reminderSub.textContent = "On — you'll be notified when a task's due time arrives, while this tab is open.";
+    } else {
+      reminderSub.textContent = "Notify me when a task's due time arrives (only while this tab is open).";
+    }
+  }
+
+  function getDueDateTime(t) {
+    if (!t.date || !t.time) return null; // reminders need both a date and a time
+    const d = new Date(t.date + 'T' + t.time + ':00');
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function fireReminderNotification(t) {
+    showAppNotification('SalafiScope Task', {
+      body: t.title + ' · due ' + formatDateBadge(t.date, t.time),
+      tag: 'salafiscope-' + t.id,
+      icon: 'icons/icon-192.png'
+    });
+  }
+
+  function markAlreadyPastDueAsNotified() {
+    // When reminders are first turned on, don't fire a barrage of
+    // notifications for everything that's already overdue — only remind
+    // for tasks that become due from this point forward.
+    const now = Date.now();
+    let changed = false;
+    tasks.forEach(function (t) {
+      if (t.completed || t.notified) return;
+      const due = getDueDateTime(t);
+      if (due && due.getTime() <= now) { t.notified = true; changed = true; }
+    });
+    if (changed) saveTasks();
+  }
+
+  function checkDueReminders() {
+    if (!notificationsSupported || Notification.permission !== 'granted') return;
+    const now = Date.now();
+    let changed = false;
+    tasks.forEach(function (t) {
+      if (t.completed || t.notified) return;
+      const due = getDueDateTime(t);
+      if (due && due.getTime() <= now) {
+        fireReminderNotification(t);
+        t.notified = true;
+        changed = true;
+      }
+    });
+    if (changed) saveTasks();
+  }
+
+  function startReminderScheduler() {
+    if (reminderInterval) return;
+    markAlreadyPastDueAsNotified();
+    reminderInterval = setInterval(checkDueReminders, 20000);
+  }
+
+  function stopReminderScheduler() {
+    clearInterval(reminderInterval);
+    reminderInterval = null;
+  }
+
+  function loadReminderPref() {
+    let pref = null;
+    try { pref = localStorage.getItem(NOTIF_KEY); } catch (e) {}
+    const on = notificationsSupported && pref === 'on' && Notification.permission === 'granted';
+    updateReminderUI(on);
+    if (on) startReminderScheduler();
+  }
+
+  reminderSwitch.addEventListener('click', function () {
+    if (!notificationsSupported) {
+      showToast('Notifications are not supported in this browser.', false);
+      return;
+    }
+    const isOn = reminderSwitch.getAttribute('aria-checked') === 'true';
+    if (isOn) {
+      try { localStorage.setItem(NOTIF_KEY, 'off'); } catch (e) {}
+      stopReminderScheduler();
+      updateReminderUI(false);
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      showToast("Notifications are blocked for this page — allow them in your browser's site settings.", false);
+      updateReminderUI(false);
+      return;
+    }
+    Notification.requestPermission().then(function (result) {
+      if (result === 'granted') {
+        try { localStorage.setItem(NOTIF_KEY, 'on'); } catch (e) {}
+        updateReminderUI(true);
+        startReminderScheduler();
+        showToast('Reminders are on.', false);
+      } else {
+        try { localStorage.setItem(NOTIF_KEY, 'off'); } catch (e) {}
+        updateReminderUI(false);
+        showToast('Notification permission was not granted.', false);
+      }
+    });
+  });
+
+  /* ============ Settings modal ============ */
+  const settingsBackdrop = document.getElementById('settings-backdrop');
+  document.getElementById('settings-btn').addEventListener('click', function () {
+    settingsBackdrop.classList.add('open');
+    focusModalClose(settingsBackdrop);
+  });
+  document.getElementById('settings-close').addEventListener('click', function () {
+    settingsBackdrop.classList.remove('open');
+  });
+  settingsBackdrop.addEventListener('click', function (e) {
+    if (e.target === settingsBackdrop) settingsBackdrop.classList.remove('open');
+  });
+  document.getElementById('clear-completed-btn').addEventListener('click', function () {
+    if (!activeScope().some(function (t) { return t.completed; })) { showToast('No completed tasks to clear.', false); return; }
+    clearCompleted();
+    showToast('Completed tasks cleared.', false);
+  });
+  document.getElementById('clear-all-btn').addEventListener('click', function () {
+    if (activeScope().length === 0) { showToast('Your list is already empty.', false); return; }
+    if (window.confirm("Clear all tasks from your list? They'll be moved to Trash, where you can restore them or delete them for good.")) {
+      clearAll();
+      settingsBackdrop.classList.remove('open');
+      showToast('All tasks cleared.', false);
+    }
+  });
+
+  /* ============ Export / Import ============ */
+  function exportData() {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      tasks: tasks,
+      lists: lists,
+      settings: {
+        theme: (function () { try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; } })(),
+        autoCompleteParent: autoCompleteParent
+      }
+    };
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'salafiscope-export-' + todayStr() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      showToast('Export downloaded.', false);
+    } catch (e) {
+      console.warn('Export failed.', e);
+      showToast('Could not create the export file.', false);
+    }
+  }
+  document.getElementById('export-data-btn').addEventListener('click', exportData);
+
+  function importData(payload) {
+    // Never touch existing lists' identities — match by name so re-importing
+    // the same backup doesn't create duplicate lists — but every task and
+    // subtask gets a brand-new id, so nothing can collide with what's
+    // already here. This is an additive merge, never a silent overwrite.
+    const importedLists = Array.isArray(payload.lists) ? payload.lists : [];
+    const importedTasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+
+    const listIdMap = {};
+    importedLists.forEach(function (l) {
+      if (!l || !l.id || !l.name) return;
+      const existing = lists.find(function (x) { return x.name.trim().toLowerCase() === String(l.name).trim().toLowerCase(); });
+      if (existing) {
+        listIdMap[l.id] = existing.id;
+      } else {
+        const created = createList(l.name);
+        if (created) listIdMap[l.id] = created.id;
+      }
+    });
+
+    const recurrenceIdMap = {};
+    let importedCount = 0;
+
+    importedTasks.forEach(function (t) {
+      if (!t || !t.title) return;
+      const newListId = (t.listId && listIdMap[t.listId]) ? listIdMap[t.listId] : defaultListId();
+
+      let recurrence = null;
+      if (t.recurrence && t.recurrence.frequency) {
+        const oldRecId = t.recurrence.id || 'r';
+        if (!recurrenceIdMap[oldRecId]) recurrenceIdMap[oldRecId] = uid();
+        recurrence = {
+          id: recurrenceIdMap[oldRecId],
+          frequency: t.recurrence.frequency,
+          interval: t.recurrence.interval || 1,
+          endDate: t.recurrence.endDate || null
+        };
+      }
+
+      const now = Date.now();
+      tasks.push({
+        id: uid(),
+        title: String(t.title),
+        completed: !!t.completed,
+        completedAt: t.completedAt || null,
+        priority: ['low', 'medium', 'high'].indexOf(t.priority) !== -1 ? t.priority : 'medium',
+        date: t.date || null,
+        time: t.time || null,
+        order: tasks.length,
+        createdAt: t.createdAt || now,
+        updatedAt: now,
+        archived: !!t.archived,
+        archivedAt: t.archivedAt || null,
+        deleted: !!t.deleted,
+        deletedAt: t.deletedAt || null,
+        notified: false,
+        listId: newListId,
+        type: t.type || null,
+        tags: Array.isArray(t.tags) ? t.tags.slice() : [],
+        recurrence: recurrence,
+        spawnedNextId: null, // the task it pointed to has a new id now; not worth relinking
+        estimatedMinutes: t.estimatedMinutes || null,
+        actualMinutes: t.actualMinutes || 0,
+        notes: t.notes || '',
+        subtasks: Array.isArray(t.subtasks) ? t.subtasks.map(function (s, i) {
+          return {
+            id: uid(),
+            title: String(s.title || ''),
+            completed: !!s.completed,
+            completedAt: s.completedAt || null,
+            order: i,
+            createdAt: s.createdAt || now
+          };
+        }) : []
+      });
+      importedCount++;
+    });
+
+    saveLists();
+    saveTasks();
+    currentListId = null;
+    renderAll();
+    showToast('Imported ' + importedCount + ' task' + (importedCount === 1 ? '' : 's') + '.', false);
+  }
+
+  document.getElementById('import-data-btn').addEventListener('click', function () {
+    document.getElementById('import-data-input').click();
+  });
+  document.getElementById('import-data-input').addEventListener('change', function (e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      let payload;
+      try {
+        payload = JSON.parse(reader.result);
+      } catch (err) {
+        showToast("That file isn't valid — it doesn't look like a SalafiScope export.", false);
+        return;
+      }
+      if (!payload || typeof payload !== 'object' || !Array.isArray(payload.tasks)) {
+        showToast("That file doesn't contain any recognizable tasks.", false);
+        return;
+      }
+      const taskCount = payload.tasks.length;
+      const listCount = Array.isArray(payload.lists) ? payload.lists.length : 0;
+      const exportedLabel = payload.exportedAt ? new Date(payload.exportedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'an unknown date';
+      const proceed = window.confirm(
+        'This file has ' + taskCount + ' task' + (taskCount === 1 ? '' : 's') +
+        (listCount ? ' across ' + listCount + ' list' + (listCount === 1 ? '' : 's') : '') +
+        ', exported on ' + exportedLabel + '.\n\n' +
+        "This adds them to what you already have — nothing currently on this device will be changed or removed. Continue?"
+      );
+      if (proceed) importData(payload);
+    };
+    reader.onerror = function () {
+      showToast('Could not read that file.', false);
+    };
+    reader.readAsText(file);
+  });
+
+  /* ============ Archive & Trash modal ============ */
+  const archiveBackdrop = document.getElementById('archive-backdrop');
+  let archiveTrashTab = 'archived';
+
+  function updateArchiveTrashSummary() {
+    const archivedCount = tasks.filter(function (t) { return t.archived && !t.deleted; }).length;
+    const trashCount = tasks.filter(function (t) { return t.deleted; }).length;
+    const el = document.getElementById('archive-trash-summary');
+    if (el) el.textContent = archivedCount + ' archived · ' + trashCount + ' in trash';
+  }
+
+  function renderArchiveTrashList() {
+    const listEl = document.getElementById('archive-trash-list');
+    const emptyRow = document.getElementById('empty-trash-row');
+    listEl.innerHTML = '';
+
+    const items = tasks
+      .filter(function (t) { return archiveTrashTab === 'archived' ? (t.archived && !t.deleted) : t.deleted; })
+      .sort(function (a, b) {
+        const ta = archiveTrashTab === 'archived' ? (a.archivedAt || 0) : (a.deletedAt || 0);
+        const tb = archiveTrashTab === 'archived' ? (b.archivedAt || 0) : (b.deletedAt || 0);
+        return tb - ta;
+      });
+
+    emptyRow.hidden = (archiveTrashTab !== 'trash') || items.length === 0;
+
+    if (items.length === 0) {
+      listEl.innerHTML = '<div class="review-no-tasks">' +
+        (archiveTrashTab === 'archived' ? 'No archived tasks.' : 'Trash is empty.') +
+        '</div>';
+      return;
+    }
+
+    items.forEach(function (t) {
+      const card = document.createElement('div');
+      card.className = 'review-card';
+      const when = archiveTrashTab === 'archived'
+        ? 'Archived ' + relativeTimeLabel(t.archivedAt)
+        : 'Deleted ' + relativeTimeLabel(t.deletedAt);
+
+      card.innerHTML =
+        '<div class="review-card-top">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:14px;' + (t.completed ? 'text-decoration:line-through;color:var(--ink-faint);' : '') + '">' + escapeHtml(t.title) + '</div>' +
+            '<div style="font-size:12px;color:var(--ink-faint);margin-top:2px;">' + when + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="review-card-row">' +
+          (archiveTrashTab === 'archived'
+            ? '<button class="btn btn-ghost" data-action="restore-archive" type="button">Restore</button><button class="btn btn-danger" data-action="trash-from-archive" type="button">Move to Trash</button>'
+            : '<button class="btn btn-ghost" data-action="restore-trash" type="button">Restore</button><button class="btn btn-danger" data-action="delete-forever" type="button">Delete permanently</button>')
+        + '</div>';
+
+      const restoreArchiveBtn = card.querySelector('[data-action="restore-archive"]');
+      if (restoreArchiveBtn) restoreArchiveBtn.addEventListener('click', function () { restoreFromArchive(t.id); });
+
+      const trashFromArchiveBtn = card.querySelector('[data-action="trash-from-archive"]');
+      if (trashFromArchiveBtn) trashFromArchiveBtn.addEventListener('click', function () { deleteTask(t.id); });
+
+      const restoreTrashBtn = card.querySelector('[data-action="restore-trash"]');
+      if (restoreTrashBtn) restoreTrashBtn.addEventListener('click', function () { restoreFromTrash(t.id); });
+
+      const deleteForeverBtn = card.querySelector('[data-action="delete-forever"]');
+      if (deleteForeverBtn) deleteForeverBtn.addEventListener('click', function () {
+        if (window.confirm('Permanently delete "' + t.title + '"? This cannot be undone.')) {
+          permanentlyDeleteTask(t.id);
+        }
+      });
+
+      listEl.appendChild(card);
+    });
+  }
+
+  document.getElementById('open-archive-btn').addEventListener('click', function () {
+    settingsBackdrop.classList.remove('open');
+    archiveTrashTab = 'archived';
+    document.querySelectorAll('[data-archive-tab]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.archiveTab === 'archived' ? 'true' : 'false');
+    });
+    renderArchiveTrashList();
+    archiveBackdrop.classList.add('open');
+    focusModalClose(archiveBackdrop);
+  });
+  document.getElementById('archive-close').addEventListener('click', function () {
+    archiveBackdrop.classList.remove('open');
+  });
+  archiveBackdrop.addEventListener('click', function (e) {
+    if (e.target === archiveBackdrop) archiveBackdrop.classList.remove('open');
+  });
+  document.querySelectorAll('[data-archive-tab]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-archive-tab]').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+      btn.setAttribute('aria-pressed', 'true');
+      archiveTrashTab = btn.dataset.archiveTab;
+      renderArchiveTrashList();
+    });
+  });
+  document.getElementById('empty-trash-btn').addEventListener('click', function () {
+    const count = tasks.filter(function (t) { return t.deleted; }).length;
+    if (count === 0) return;
+    if (window.confirm('Permanently delete all ' + count + ' task' + (count === 1 ? '' : 's') + ' in Trash? This cannot be undone.')) {
+      emptyTrash();
+      renderArchiveTrashList();
+      showToast('Trash emptied.', false);
+    }
+  });
+
+  /* ============ Lists ============ */
+  function updateListsSummary() {
+    const el = document.getElementById('lists-summary');
+    if (el) el.textContent = lists.length + ' list' + (lists.length === 1 ? '' : 's');
+  }
+
+  function renderListSwitcher() {
+    const el = document.getElementById('list-switcher');
+    const scope = activeScope();
+    let html = '<button type="button" class="list-chip" data-list-id="" aria-pressed="' + (currentListId === null ? 'true' : 'false') + '">All Lists <span style="opacity:.6">(' + scope.length + ')</span></button>';
+    lists.forEach(function (l) {
+      const count = scope.filter(function (t) { return t.listId === l.id; }).length;
+      html += '<button type="button" class="list-chip" data-list-id="' + l.id + '" aria-pressed="' + (currentListId === l.id ? 'true' : 'false') + '">' + escapeHtml(l.name) + ' <span style="opacity:.6">(' + count + ')</span></button>';
+    });
+    html += '<button type="button" class="list-chip list-chip-add" id="add-list-chip">+ New list</button>';
+    el.innerHTML = html;
+
+    el.querySelectorAll('[data-list-id]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentListId = btn.dataset.listId || null;
+        renderListSwitcher();
+        renderTasks();
+        updateStatistics();
+      });
+    });
+    document.getElementById('add-list-chip').addEventListener('click', function () {
+      renderListsManage();
+      listsBackdrop.classList.add('open');
+      setTimeout(function () {
+        const input = document.getElementById('new-list-input');
+        if (input) input.focus();
+      }, 50);
+    });
+    updateListsSummary();
+  }
+
+  function renderListsManage() {
+    const el = document.getElementById('lists-manage-list');
+    el.innerHTML = '';
+    lists.forEach(function (l) {
+      const count = taskCountForList(l.id);
+      const card = document.createElement('div');
+      card.className = 'review-card';
+      card.innerHTML =
+        '<div class="review-card-top">' +
+          '<input type="text" value="' + escapeAttr(l.name) + '" data-action="rename-list" aria-label="List name">' +
+          '<button type="button" data-action="delete-list" aria-label="Delete list">' + iconSvg('trash') + '</button>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--ink-faint);">' + count + ' task' + (count === 1 ? '' : 's') + '</div>';
+
+      card.querySelector('[data-action="rename-list"]').addEventListener('change', function (e) {
+        renameList(l.id, e.target.value);
+        renderListSwitcher();
+        updateListsSummary();
+      });
+      card.querySelector('[data-action="delete-list"]').addEventListener('click', function () {
+        if (lists.length <= 1) { showToast('You need at least one list.', false); return; }
+        if (window.confirm('Delete "' + l.name + '"? Its tasks move to another list — they are not deleted.')) {
+          deleteList(l.id);
+          renderListsManage();
+          renderListSwitcher();
+          renderAll();
+        }
+      });
+      el.appendChild(card);
+    });
+    updateListsSummary();
+  }
+
+  const listsBackdrop = document.getElementById('lists-backdrop');
+  document.getElementById('open-lists-btn').addEventListener('click', function () {
+    settingsBackdrop.classList.remove('open');
+    renderListsManage();
+    listsBackdrop.classList.add('open');
+    focusModalClose(listsBackdrop);
+  });
+  document.getElementById('lists-close').addEventListener('click', function () {
+    listsBackdrop.classList.remove('open');
+  });
+  listsBackdrop.addEventListener('click', function (e) {
+    if (e.target === listsBackdrop) listsBackdrop.classList.remove('open');
+  });
+  document.getElementById('add-list-btn').addEventListener('click', function () {
+    const input = document.getElementById('new-list-input');
+    if (!input.value.trim()) return;
+    createList(input.value);
+    input.value = '';
+    renderListsManage();
+    renderListSwitcher();
+  });
+  document.getElementById('new-list-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('add-list-btn').click(); }
+  });
+
+  /* ============ Type filter ============ */
+  const typeFilterSelect = document.getElementById('type-filter');
+  TASK_TYPES.filter(function (t) { return t.value; }).forEach(function (opt) {
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.label;
+    typeFilterSelect.appendChild(o);
+  });
+  typeFilterSelect.addEventListener('change', function () {
+    currentTypeFilter = typeFilterSelect.value;
+    renderTasks();
+  });
+
+  /* ============ Daily Review ============ */
+  const dailyReviewBackdrop = document.getElementById('daily-review-backdrop');
+
+  function renderDailyReview() {
+    const scope = activeScope(); // whole app, every list — "your day" is global
+    const today = todayStr();
+    const nowStr = new Date().toDateString();
+    const completedToday = scope.filter(function (t) { return t.completed && t.completedAt && new Date(t.completedAt).toDateString() === nowStr; }).length;
+    const remainingToday = scope.filter(function (t) { return t.date === today && !t.completed; });
+    const overdue = scope.filter(function (t) { return t.date && t.date < today && !t.completed; });
+    const estimateMinutes = remainingToday.concat(overdue).reduce(function (sum, t) { return sum + (t.estimatedMinutes || 0); }, 0);
+
+    document.getElementById('daily-review-stats').innerHTML =
+      '<div class="stat"><b>' + completedToday + '</b><span>Completed</span></div>' +
+      '<div class="stat"><b>' + remainingToday.length + '</b><span>Remaining</span></div>' +
+      '<div class="stat"><b>' + overdue.length + '</b><span>Overdue</span></div>' +
+      '<div class="stat"><b>' + (estimateMinutes ? formatDuration(estimateMinutes) : '—') + '</b><span>Est. left</span></div>';
+
+    const listEl = document.getElementById('daily-review-list');
+    const items = overdue.concat(remainingToday);
+    listEl.innerHTML = '';
+    if (items.length === 0) {
+      listEl.innerHTML = '<div class="review-no-tasks">Nothing left for today. Nice work.</div>';
+      return;
+    }
+
+    items.forEach(function (t) {
+      const card = document.createElement('div');
+      card.className = 'review-card';
+      const isOverdue = t.date < today;
+      card.innerHTML =
+        '<div class="review-card-top"><div style="flex:1;">' +
+          '<div style="font-size:14px;">' + escapeHtml(t.title) + '</div>' +
+          '<div style="font-size:12px;color:var(--ink-faint);margin-top:2px;">' +
+            formatDateBadge(t.date, t.time) +
+            (isOverdue ? ' · <span style="color:var(--danger);font-weight:600;">Overdue</span>' : '') +
+            (t.estimatedMinutes ? ' · ' + formatDuration(t.estimatedMinutes) : '') +
+          '</div>' +
+        '</div></div>' +
+        '<div class="review-card-row" data-role="actions">' +
+          '<button class="btn btn-ghost" type="button" data-action="tomorrow">Move to tomorrow</button>' +
+          '<button class="btn btn-ghost" type="button" data-action="reschedule">Reschedule</button>' +
+          '<button class="btn btn-danger" type="button" data-action="delete">Delete</button>' +
+        '</div>';
+
+      card.querySelector('[data-action="tomorrow"]').addEventListener('click', function () {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        editTask(t.id, { date: dateToStr(d) });
+        renderDailyReview();
+      });
+      card.querySelector('[data-action="delete"]').addEventListener('click', function () {
+        deleteTask(t.id);
+        renderDailyReview();
+      });
+      card.querySelector('[data-action="reschedule"]').addEventListener('click', function () {
+        const row = card.querySelector('[data-role="actions"]');
+        row.innerHTML =
+          '<input type="date" class="reschedule-input" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:7px 9px;background:var(--bg);">' +
+          '<button class="btn btn-primary" type="button" data-action="confirm-reschedule">Set</button>' +
+          '<button class="btn btn-ghost" type="button" data-action="cancel-reschedule">Cancel</button>';
+        const input = row.querySelector('.reschedule-input');
+        input.value = t.date || today;
+        row.querySelector('[data-action="confirm-reschedule"]').addEventListener('click', function () {
+          if (input.value) { editTask(t.id, { date: input.value }); renderDailyReview(); }
+        });
+        row.querySelector('[data-action="cancel-reschedule"]').addEventListener('click', function () { renderDailyReview(); });
+      });
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function openDailyReview() {
+    settingsBackdrop.classList.remove('open');
+    renderDailyReview();
+    dailyReviewBackdrop.classList.add('open');
+    focusModalClose(dailyReviewBackdrop);
+  }
+  document.getElementById('open-daily-review-btn').addEventListener('click', openDailyReview);
+  document.getElementById('open-daily-review-settings-btn').addEventListener('click', openDailyReview);
+  document.getElementById('daily-review-close').addEventListener('click', function () {
+    dailyReviewBackdrop.classList.remove('open');
+  });
+  dailyReviewBackdrop.addEventListener('click', function (e) {
+    if (e.target === dailyReviewBackdrop) dailyReviewBackdrop.classList.remove('open');
+  });
+
+  /* ============ Insights ============ */
+  const insightsBackdrop = document.getElementById('insights-backdrop');
+
+  function computeStreak() {
+    const completedDates = new Set();
+    tasks.forEach(function (t) {
+      if (t.completed && t.completedAt) completedDates.add(new Date(t.completedAt).toDateString());
+    });
+    let streak = 0;
+    const cursor = new Date();
+    if (!completedDates.has(cursor.toDateString())) cursor.setDate(cursor.getDate() - 1);
+    while (completedDates.has(cursor.toDateString())) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function breakdownHTML(title, map) {
+    const entries = Object.keys(map).sort(function (a, b) { return map[b] - map[a]; });
+    if (entries.length === 0) return '';
+    let h = '<div style="margin-bottom:14px;"><div class="label" style="font-size:13px;font-weight:600;margin-bottom:6px;">' + title + '</div>';
+    entries.forEach(function (k) {
+      h += '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);padding:3px 0;"><span>' + escapeHtml(k) + '</span><span>' + map[k] + '</span></div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  function renderInsights() {
+    const now = new Date();
+    const nowStr = now.toDateString();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const allCompleted = tasks.filter(function (t) { return t.completed && t.completedAt; });
+    const completedToday = allCompleted.filter(function (t) { return new Date(t.completedAt).toDateString() === nowStr; });
+    const completedWeek = allCompleted.filter(function (t) { return new Date(t.completedAt) >= weekStart; });
+    const streak = computeStreak();
+    const timeToday = completedToday.reduce(function (sum, t) { return sum + (t.actualMinutes || t.estimatedMinutes || 0); }, 0);
+
+    const body = document.getElementById('insights-body');
+
+    if (allCompleted.length === 0) {
+      body.innerHTML = '<div class="review-no-tasks">Complete a few tasks and your insights will show up here.</div>';
+      return;
+    }
+
+    const byType = {};
+    allCompleted.forEach(function (t) {
+      const k = t.type ? typeLabel(t.type) : 'No type';
+      byType[k] = (byType[k] || 0) + 1;
+    });
+    const byList = {};
+    allCompleted.forEach(function (t) {
+      const k = getListName(t.listId);
+      byList[k] = (byList[k] || 0) + 1;
+    });
+
+    const dayCounts = {};
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - 30);
+    allCompleted.forEach(function (t) {
+      const d = new Date(t.completedAt);
+      if (d >= cutoff) {
+        const key = dateToStr(d);
+        dayCounts[key] = (dayCounts[key] || 0) + 1;
+      }
+    });
+    let bestDay = null, bestCount = 0;
+    Object.keys(dayCounts).forEach(function (k) { if (dayCounts[k] > bestCount) { bestCount = dayCounts[k]; bestDay = k; } });
+
+    let html = '<div class="stat-strip" style="border-top:none;padding-top:0;margin-top:0;margin-bottom:16px;">' +
+      '<div class="stat"><b>' + completedToday.length + '</b><span>Today</span></div>' +
+      '<div class="stat"><b>' + completedWeek.length + '</b><span>This week</span></div>' +
+      '<div class="stat"><b>' + streak + '</b><span>Day streak</span></div>' +
+      '<div class="stat"><b>' + (timeToday ? formatDuration(timeToday) : '—') + '</b><span>Time today</span></div>' +
+      '</div>';
+
+    html += breakdownHTML('Completed by type', byType);
+    html += breakdownHTML('Completed by list', byList);
+
+    if (bestDay) {
+      const d = new Date(bestDay + 'T00:00:00');
+      html += '<p style="font-size:13px;color:var(--ink-soft);">Your most productive day in the last 30 days: <b>' +
+        d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + '</b> (' + bestCount + ' task' + (bestCount === 1 ? '' : 's') + ' completed).</p>';
+    }
+
+    body.innerHTML = html;
+  }
+
+  document.getElementById('open-insights-btn').addEventListener('click', function () {
+    settingsBackdrop.classList.remove('open');
+    renderInsights();
+    insightsBackdrop.classList.add('open');
+    focusModalClose(insightsBackdrop);
+  });
+  document.getElementById('insights-close').addEventListener('click', function () {
+    insightsBackdrop.classList.remove('open');
+  });
+  insightsBackdrop.addEventListener('click', function (e) {
+    if (e.target === insightsBackdrop) insightsBackdrop.classList.remove('open');
+  });
+
+  /* ============ Focus timer ============ */
+  const focusBackdrop = document.getElementById('focus-backdrop');
+  let focusState = { taskId: null, durationMinutes: 25, remainingSeconds: 0, elapsedSeconds: 0, intervalId: null };
+  let focusPaused = false;
+
+  function populateFocusTaskSelect() {
+    const sel = document.getElementById('focus-task-select');
+    const opts = activeScope().filter(function (t) { return !t.completed; });
+    sel.innerHTML = '<option value="">No specific task</option>' +
+      opts.map(function (t) { return '<option value="' + t.id + '">' + escapeHtml(t.title) + '</option>'; }).join('');
+  }
+
+  function showFocusState(name) {
+    ['setup', 'running', 'outcome'].forEach(function (s) {
+      document.getElementById('focus-state-' + s).classList.toggle('active', s === name);
+    });
+  }
+
+  function updateFocusCountdownDisplay() {
+    const s = Math.max(0, focusState.remainingSeconds);
+    const mm = String(Math.floor(s / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    document.getElementById('focus-countdown').textContent = mm + ':' + ss;
+  }
+
+  function runFocusInterval() {
+    clearInterval(focusState.intervalId);
+    focusState.intervalId = setInterval(function () {
+      focusState.remainingSeconds--;
+      focusState.elapsedSeconds++;
+      updateFocusCountdownDisplay();
+      if (focusState.remainingSeconds <= 0) {
+        clearInterval(focusState.intervalId);
+        showFocusOutcome('Session complete', 'You finished the full ' + focusState.durationMinutes + '-minute session.');
+      }
+    }, 1000);
+  }
+
+  function startFocusCountdown() {
+    showFocusState('running');
+    const t = focusState.taskId ? tasks.find(function (x) { return x.id === focusState.taskId; }) : null;
+    document.getElementById('focus-running-label').textContent = t ? ('Focusing on: ' + t.title) : 'Focusing…';
+    document.getElementById('focus-pause-btn').textContent = 'Pause';
+    focusPaused = false;
+    updateFocusCountdownDisplay();
+    runFocusInterval();
+  }
+
+  function showFocusOutcome(label, detail) {
+    document.getElementById('focus-outcome-label').textContent = label;
+    document.getElementById('focus-outcome-detail').textContent = detail;
+    showFocusState('outcome');
+  }
+
+  function logFocusMinutes(mins) {
+    if (focusState.taskId && mins > 0) {
+      const t = tasks.find(function (x) { return x.id === focusState.taskId; });
+      if (t) editTask(t.id, { actualMinutes: (t.actualMinutes || 0) + mins });
+    }
+  }
+
+  function openFocusModal() {
+    settingsBackdrop.classList.remove('open');
+    populateFocusTaskSelect();
+    document.getElementById('focus-custom-minutes').value = '';
+    document.querySelectorAll('.focus-duration-btn').forEach(function (b) { b.style.background = ''; b.style.color = ''; });
+    document.getElementById('focus-start-btn').dataset.minutes = '25';
+    showFocusState('setup');
+    focusBackdrop.classList.add('open');
+    setTimeout(function () {
+      const sel = document.getElementById('focus-task-select');
+      if (sel) sel.focus();
+    }, 0);
+  }
+
+  document.querySelectorAll('.focus-duration-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.focus-duration-btn').forEach(function (b) { b.style.background = ''; b.style.color = ''; });
+      btn.style.background = 'var(--accent-soft)';
+      btn.style.color = 'var(--accent)';
+      document.getElementById('focus-start-btn').dataset.minutes = btn.dataset.minutes;
+      document.getElementById('focus-custom-minutes').value = '';
+    });
+  });
+
+  document.getElementById('focus-start-btn').addEventListener('click', function () {
+    const custom = parseInt(document.getElementById('focus-custom-minutes').value, 10);
+    const chosen = custom > 0 ? custom : parseInt(this.dataset.minutes || '25', 10);
+    focusState.taskId = document.getElementById('focus-task-select').value || null;
+    focusState.durationMinutes = chosen;
+    focusState.remainingSeconds = chosen * 60;
+    focusState.elapsedSeconds = 0;
+    startFocusCountdown();
+  });
+
+  document.getElementById('focus-pause-btn').addEventListener('click', function () {
+    if (!focusPaused) {
+      clearInterval(focusState.intervalId);
+      focusPaused = true;
+      this.textContent = 'Resume';
+    } else {
+      focusPaused = false;
+      this.textContent = 'Pause';
+      runFocusInterval();
+    }
+  });
+
+  document.getElementById('focus-stop-btn').addEventListener('click', function () {
+    clearInterval(focusState.intervalId);
+    const mins = Math.round(focusState.elapsedSeconds / 60);
+    showFocusOutcome('Session stopped', 'You focused for about ' + (mins || 1) + ' minute' + (mins === 1 ? '' : 's') + ' before stopping.');
+  });
+
+  document.getElementById('focus-log-completed-btn').addEventListener('click', function () {
+    logFocusMinutes(focusState.durationMinutes);
+    focusBackdrop.classList.remove('open');
+    showToast('Focus session logged.', false);
+  });
+  document.getElementById('focus-log-partial-btn').addEventListener('click', function () {
+    logFocusMinutes(Math.max(1, Math.round(focusState.elapsedSeconds / 60)));
+    focusBackdrop.classList.remove('open');
+    showToast('Partial session logged.', false);
+  });
+  document.getElementById('focus-continue-btn').addEventListener('click', function () {
+    focusState.remainingSeconds = focusState.durationMinutes * 60;
+    focusState.elapsedSeconds = 0;
+    startFocusCountdown();
+  });
+  document.getElementById('focus-discard-btn').addEventListener('click', function () {
+    focusBackdrop.classList.remove('open');
+  });
+
+  document.getElementById('open-focus-btn').addEventListener('click', openFocusModal);
+  document.getElementById('focus-close').addEventListener('click', function () {
+    clearInterval(focusState.intervalId);
+    focusBackdrop.classList.remove('open');
+  });
+  focusBackdrop.addEventListener('click', function (e) {
+    if (e.target === focusBackdrop) { clearInterval(focusState.intervalId); focusBackdrop.classList.remove('open'); }
+  });
+
+  /* ============ Add task form ============ */
+  document.getElementById('add-task-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const input = document.getElementById('task-input');
+    const raw = input.value.trim();
+    if (!raw) return;
+    const parsed = parseQuickAdd(raw);
+    addTask(parsed.title, {
+      date: parsed.date,
+      time: parsed.time,
+      priority: parsed.priority,
+      estimatedMinutes: parsed.estimatedMinutes,
+      tags: parsed.tags
+    });
+    input.value = '';
+    input.focus();
+  });
+
+  /* ============ Voice button ============ */
+  document.getElementById('voice-btn').addEventListener('click', function () {
+    openVoiceModal();
+  });
+
+  /* ============ Filters ============ */
+  document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
+      chip.setAttribute('aria-pressed', 'true');
+      currentFilter = chip.dataset.filter;
+      renderTasks();
+    });
+  });
+
+  /* ============ Search ============ */
+  const searchBar = document.getElementById('search-bar');
+  const searchInput = document.getElementById('search-input');
+  document.getElementById('search-toggle').addEventListener('click', function () {
+    searchBar.classList.toggle('open');
+    if (searchBar.classList.contains('open')) searchInput.focus();
+  });
+  document.getElementById('search-clear').addEventListener('click', function () {
+    searchInput.value = '';
+    searchQuery = '';
+    renderTasks();
+    searchInput.focus();
+  });
+  searchInput.addEventListener('input', function () {
+    searchQuery = searchInput.value.trim();
+    renderTasks();
+  });
+  function searchTasks(query) {
+    searchQuery = query;
+    renderTasks();
+  }
+
+  /* ============ Keyboard shortcuts ============ */
+  document.addEventListener('keydown', function (e) {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchBar.classList.add('open');
+      searchInput.focus();
+    } else if (mod && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      document.getElementById('task-input').focus();
+    } else if (e.key === 'Escape') {
+      if (settingsBackdrop.classList.contains('open')) settingsBackdrop.classList.remove('open');
+      if (voiceBackdrop.classList.contains('open')) closeVoiceModal();
+      if (archiveBackdrop.classList.contains('open')) archiveBackdrop.classList.remove('open');
+      if (listsBackdrop.classList.contains('open')) listsBackdrop.classList.remove('open');
+      if (dailyReviewBackdrop.classList.contains('open')) dailyReviewBackdrop.classList.remove('open');
+      if (insightsBackdrop.classList.contains('open')) insightsBackdrop.classList.remove('open');
+      if (focusBackdrop.classList.contains('open')) { clearInterval(focusState.intervalId); focusBackdrop.classList.remove('open'); }
+      closeAllTaskMenus();
+    }
+  });
+
+  /* ============ Voice-to-task engine ============ */
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voiceBackdrop = document.getElementById('voice-backdrop');
+  const voiceStates = {
+    recording: document.getElementById('voice-state-recording'),
+    error: document.getElementById('voice-state-error'),
+    fallback: document.getElementById('voice-state-fallback'),
+    review: document.getElementById('voice-state-review')
+  };
+  const micOrb = document.getElementById('mic-orb');
+  const voiceTimerEl = document.getElementById('voice-timer');
+  const voiceLiveTranscript = document.getElementById('voice-live-transcript');
+  const voiceStatusText = document.getElementById('voice-status-text');
+
+  let recognition = null;
+  let voiceTimerInterval = null;
+  let voiceStartedAt = null;
+  let finalTranscriptChunks = [];
+  let pendingReviewTasks = [];
+  let voiceStoppedManually = false;
+
+  function checkVoiceSupport() {
+    const sub = document.getElementById('voice-support-sub');
+    const badge = document.getElementById('voice-support-badge');
+    if (SpeechRecognitionAPI) {
+      sub.textContent = 'Available in this browser';
+      badge.textContent = 'Ready';
+    } else {
+      sub.textContent = 'Not supported in this browser — a text fallback is used instead';
+      badge.textContent = 'Text fallback';
+    }
+  }
+
+  function showVoiceState(name) {
+    Object.keys(voiceStates).forEach(function (k) {
+      voiceStates[k].classList.toggle('active', k === name);
+    });
+  }
+
+  function openVoiceModal() {
+    voiceBackdrop.classList.add('open');
+    if (!SpeechRecognitionAPI) {
+      document.getElementById('voice-fallback-msg').textContent =
+        "Voice recognition isn't available in this browser. Type what you'd like to do, and SalafiScope Task will split it into tasks for you.";
+      showVoiceState('fallback');
+      document.getElementById('voice-fallback-text').focus();
+      return;
+    }
+    startVoiceRecognition();
+  }
+
+  function closeVoiceModal() {
+    stopVoiceRecognition(true);
+    voiceBackdrop.classList.remove('open');
+    finalTranscriptChunks = [];
+    pendingReviewTasks = [];
+    document.getElementById('voice-fallback-text').value = '';
+  }
+
+  function startVoiceRecognition() {
+    finalTranscriptChunks = [];
+    voiceStoppedManually = false;
+    showVoiceState('recording');
+    voiceStatusText.textContent = 'Listening…';
+    micOrb.classList.add('listening');
+    voiceLiveTranscript.textContent = '';
+    voiceStartedAt = Date.now();
+    voiceTimerEl.textContent = '00:00';
+    clearInterval(voiceTimerInterval);
+    voiceTimerInterval = setInterval(updateVoiceTimer, 250);
+
+    recognition = new SpeechRecognitionAPI();
+    recognition.lang = (navigator.language || 'en-US');
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = function (event) {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscriptChunks.push(chunk.trim());
+        else interim += chunk;
+      }
+      voiceLiveTranscript.textContent = (finalTranscriptChunks.join(' ') + ' ' + interim).trim();
+    };
+
+    recognition.onerror = function (event) {
+      handleVoiceError(event.error);
+    };
+
+    recognition.onend = function () {
+      clearInterval(voiceTimerInterval);
+      micOrb.classList.remove('listening');
+      if (voiceStoppedManually) {
+        finishRecording();
+      }
+      // If it ended on its own with nothing captured and no explicit error fired,
+      // treat it like a no-speech case.
+      else if (finalTranscriptChunks.length === 0) {
+        handleVoiceError('no-speech');
+      } else {
+        finishRecording();
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      handleVoiceError('start-failed');
+    }
+  }
+
+  function updateVoiceTimer() {
+    const secs = Math.floor((Date.now() - voiceStartedAt) / 1000);
+    const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+    const ss = String(secs % 60).padStart(2, '0');
+    voiceTimerEl.textContent = mm + ':' + ss;
+  }
+
+  function stopVoiceRecognition(silent) {
+    voiceStoppedManually = true;
+    clearInterval(voiceTimerInterval);
+    if (recognition) {
+      try { recognition.stop(); } catch (e) { /* already stopped */ }
+    }
+    if (silent) recognition = null;
+  }
+
+  document.getElementById('voice-stop-btn').addEventListener('click', function () {
+    voiceStatusText.textContent = 'Finishing up…';
+    stopVoiceRecognition(false);
+  });
+
+  function finishRecording() {
+    const transcript = finalTranscriptChunks.join(' ').trim();
+    if (!transcript) {
+      handleVoiceError('no-speech');
+      return;
+    }
+    processVoiceInput(transcript);
+  }
+
+  function isEmbeddedView() {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  }
+
+  function handleVoiceError(code) {
+    clearInterval(voiceTimerInterval);
+    micOrb.classList.remove('listening');
+    const titleEl = document.getElementById('voice-error-title');
+    const detailEl = document.getElementById('voice-error-detail');
+    const iconEl = document.getElementById('voice-error-icon');
+    const embeddedHint = isEmbeddedView()
+      ? " This page may be open inside another app's built-in browser, which often blocks microphone access outright — try opening this link in Chrome or Safari directly instead."
+      : '';
+
+    if (code === 'not-allowed' || code === 'permission-denied' || code === 'service-not-allowed') {
+      iconEl.textContent = '🚫';
+      titleEl.textContent = 'Microphone access was denied';
+      detailEl.textContent = "Allow microphone access in your browser's settings to use voice input, or type your tasks instead." + embeddedHint;
+    } else if (code === 'audio-capture') {
+      iconEl.textContent = '🎤';
+      titleEl.textContent = 'No microphone found';
+      detailEl.textContent = 'Connect a microphone to use voice input, or type your tasks instead.' + embeddedHint;
+    } else if (code === 'no-speech') {
+      iconEl.textContent = '🎙️';
+      titleEl.textContent = "We didn't catch anything";
+      detailEl.textContent = 'Try speaking again, or type your tasks instead.';
+    } else if (code === 'network') {
+      iconEl.textContent = '📡';
+      titleEl.textContent = 'Connection issue';
+      detailEl.textContent = 'Voice recognition needs an internet connection. Try again, or type your tasks instead.';
+    } else {
+      iconEl.textContent = '⚠️';
+      titleEl.textContent = "Voice recognition didn't work this time";
+      detailEl.textContent = 'Try again, or type your tasks instead.' + embeddedHint;
+    }
+    showVoiceState('error');
+  }
+
+  document.getElementById('voice-retry-btn').addEventListener('click', function () {
+    if (SpeechRecognitionAPI) startVoiceRecognition();
+    else showVoiceState('fallback');
+  });
+  document.getElementById('voice-switch-text-btn').addEventListener('click', function () {
+    showVoiceState('fallback');
+    document.getElementById('voice-fallback-text').focus();
+  });
+  document.getElementById('voice-fallback-extract-btn').addEventListener('click', function () {
+    const text = document.getElementById('voice-fallback-text').value.trim();
+    if (!text) { showToast('Type something first.', false); return; }
+    processVoiceInput(text);
+  });
+  document.getElementById('voice-close').addEventListener('click', closeVoiceModal);
+  voiceBackdrop.addEventListener('click', function (e) {
+    if (e.target === voiceBackdrop) closeVoiceModal();
+  });
+
+  /* ---------- processVoiceInput / extractTasks ---------- */
+  function processVoiceInput(transcript) {
+    pendingReviewTasks = extractTasks(transcript).map(function (t) {
+      t._id = uid();
+      return t;
+    });
+    document.getElementById('review-transcript-text').textContent = transcript;
+    renderReviewList();
+    showVoiceState('review');
+  }
+
+  const IMPERATIVE_VERBS = ['call','study','wash','clean','revise','buy','email','text','finish','submit',
+    'prepare','cook','pay','book','schedule','review','practice','read','write','organize','fix','check',
+    'pack','water','walk','meet','attend','pick','drop','send','visit','return','renew','charge','print',
+    'upload','download','register','apply','confirm','cancel','reschedule','remind','do','get','make',
+    'bring','take','tidy','sort','file','plan','draft'];
+
+  const FILLER_PREFIXES = [
+    /^i need to\s+/i, /^i've got to\s+/i, /^i have to\s+/i, /^i should\s+/i, /^i want to\s+/i,
+    /^remind me to\s+/i, /^remind me\s+/i, /^don't forget to\s+/i, /^please\s+/i,
+    /^also need to\s+/i, /^also\s+/i, /^today i need to\s+/i, /^can you\s+/i, /^could you\s+/i,
+    /^make sure to\s+/i, /^be sure to\s+/i, /^i must\s+/i, /^i gotta\s+/i, /^gotta\s+/i
+  ];
+
+  const WEEKDAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const JUNK_TITLES = /^(this is|it is|it's|that is|that's|i am|i'm|so|okay|well)$/i;
+
+  function splitIntoSegments(text) {
+    let marked = ' ' + text.trim() + ' ';
+    marked = marked
+      .replace(/\s*,\s*and\s+/gi, ' |SPLIT| ')
+      .replace(/\s+and then\s+/gi, ' |SPLIT| ')
+      .replace(/\s+then\s+/gi, ' |SPLIT| ')
+      .replace(/\s+also\s+/gi, ' |SPLIT| ')
+      .replace(/\s+next\s+/gi, ' |SPLIT| ')
+      .replace(/[;]+\s*/g, ' |SPLIT| ')
+      .replace(/\.\s+/g, ' |SPLIT| ')
+      .replace(/\s*,\s*/g, ' |SPLIT| ');
+
+    const verbPattern = new RegExp(
+      '\\s+and\\s+(?=(?:i\\s+need\\s+to\\s+|i\\s+have\\s+to\\s+|remind\\s+me\\s+to\\s+|don\'t\\s+forget\\s+to\\s+|please\\s+)?(?:' +
+      IMPERATIVE_VERBS.join('|') + ')\\b)', 'gi'
+    );
+    marked = marked.replace(verbPattern, ' |SPLIT| ');
+
+    return marked.split('|SPLIT|').map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function stripAddWrapper(s) {
+    const m = s.match(/^add\s+(.+?)\s+to\s+(?:my\s+)?(?:tasks?|to-?do\s*list|list)\s*$/i);
+    return m ? m[1] : s;
+  }
+
+  function cleanTitle(segment) {
+    let s = segment.trim();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const re of FILLER_PREFIXES) {
+        if (re.test(s)) { s = s.replace(re, ''); changed = true; }
+      }
+      const wrapped = stripAddWrapper(s);
+      if (wrapped !== s) { s = wrapped; changed = true; }
+    }
+    s = s.replace(/^(um+|uh+|so|okay|ok)[\s,]+/i, '');
+    s = s.trim().replace(/[.,;]+$/, '');
+    if (s.length) s = s.charAt(0).toUpperCase() + s.slice(1);
+    return s.trim();
+  }
+
+  function extractTimeFromText(text) {
+    let m = text.match(/\bat\s+noon\b/i);
+    if (m) return { time: '12:00', match: m[0] };
+    m = text.match(/\bat\s+midnight\b/i);
+    if (m) return { time: '00:00', match: m[0] };
+
+    m = text.match(/\bat\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?\b/i);
+    if (m) {
+      let h = parseInt(m[1], 10);
+      const mins = m[2] ? parseInt(m[2], 10) : 0;
+      const period = m[3] ? m[3].replace(/\./g, '').toLowerCase() : null;
+      if (period === 'pm' && h < 12) h += 12;
+      if (period === 'am' && h === 12) h = 0;
+      if (h >= 0 && h <= 23 && mins >= 0 && mins <= 59) {
+        return { time: String(h).padStart(2, '0') + ':' + String(mins).padStart(2, '0'), match: m[0] };
+      }
+    }
+    return null;
+  }
+
+  function extractDateFromText(text) {
+    if (/\btoday\b/i.test(text)) {
+      const m = text.match(/\btoday\b/i);
+      return { date: todayStr(), match: m[0] };
+    }
+    if (/\btomorrow\b/i.test(text)) {
+      const m = text.match(/\btomorrow\b/i);
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      const ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      return { date: ds, match: m[0] };
+    }
+    for (const day of WEEKDAYS) {
+      const re = new RegExp('\\b(?:on\\s+)?' + day + '\\b', 'i');
+      const m = text.match(re);
+      if (m) {
+        const target = WEEKDAYS.indexOf(day);
+        const d = new Date();
+        let diff = (target - d.getDay() + 7) % 7;
+        if (diff === 0) diff = 7; // treat a bare weekday name as the upcoming one, not today
+        d.setDate(d.getDate() + diff);
+        const ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        return { date: ds, match: m[0] };
+      }
+    }
+    return null;
+  }
+
+  function extractPriorityFromText(text) {
+    if (/\b(urgent|asap|as soon as possible|high priority|really important|critical)\b/i.test(text)) return 'high';
+    if (/\b(low priority|whenever|no rush|not urgent|when i get a chance)\b/i.test(text)) return 'low';
+    return null;
+  }
+
+  const DURATION_NUMBER_WORDS = {
+    half: 0.5, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+    nine: 9, ten: 10, eleven: 11, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, fifty: 50
+  };
+  function durationWordToNumber(w) {
+    if (!w) return null;
+    const clean = w.toLowerCase().replace(/[\s-]/g, '');
+    if (/^\d+(\.\d+)?$/.test(clean)) return parseFloat(clean);
+    if (clean === 'fortyfive') return 45;
+    return DURATION_NUMBER_WORDS.hasOwnProperty(clean) ? DURATION_NUMBER_WORDS[clean] : null;
+  }
+  const HOUR_WORD = '(?:\\d+(?:\\.\\d+)?|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)';
+  const MIN_WORD = '(?:\\d+|fifteen|twenty|thirty|forty[- ]?five|fifty)';
+
+  function extractDurationFromText(text) {
+    let m = text.match(/\bfor\s+half\s+(?:an\s+)?hour\b/i);
+    if (m) return { minutes: 30, match: m[0] };
+
+    // "for X hours (and) Y minutes"
+    m = text.match(new RegExp('\\bfor\\s+(' + HOUR_WORD + ')\\s+hours?\\s+(?:and\\s+)?(' + MIN_WORD + ')\\s*(?:minutes?|mins?)\\b', 'i'));
+    if (m) {
+      const h = durationWordToNumber(m[1]);
+      const mm = durationWordToNumber(m[2]);
+      if (h !== null && mm !== null) return { minutes: Math.round(h * 60 + mm), match: m[0] };
+    }
+
+    // "for X hours"
+    m = text.match(new RegExp('\\bfor\\s+(' + HOUR_WORD + ')\\s+hours?\\b', 'i'));
+    if (m) {
+      const h = durationWordToNumber(m[1]);
+      if (h !== null) return { minutes: Math.round(h * 60), match: m[0] };
+    }
+
+    // "for X minutes"
+    m = text.match(new RegExp('\\bfor\\s+(' + MIN_WORD + ')\\s*(?:minutes?|mins?)\\b', 'i'));
+    if (m) {
+      const mm = durationWordToNumber(m[1]);
+      if (mm !== null) return { minutes: mm, match: m[0] };
+    }
+
+    return null;
+  }
+
+  /* ---------- Quick Add ---------- */
+  // Lets the main add-task box understand "Study hematology tomorrow 7pm
+  // #exam high" — but only ever acts on tokens it actually recognizes;
+  // plain text with no such signals is added exactly as typed.
+  function extractTagsFromText(text) {
+    const tags = [];
+    const cleaned = text.replace(/#(\w+)/g, function (m, tag) { tags.push(tag.toLowerCase()); return ' '; });
+    return { tags: tags, text: cleaned };
+  }
+
+  function extractQuickAddPriority(text) {
+    const m = text.trim().match(/\b(high|medium|low)\s*$/i);
+    if (m) return { priority: m[1].toLowerCase(), match: m[0] };
+    return null;
+  }
+
+  function extractBareTimeFromText(text) {
+    // Quick Add lets time stand alone ("7pm") without needing "at" first —
+    // still requires an am/pm suffix so a plain number is never mistaken for a time.
+    const m = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b/i);
+    if (m) {
+      let h = parseInt(m[1], 10);
+      const mins = m[2] ? parseInt(m[2], 10) : 0;
+      const period = m[3].replace(/\./g, '').toLowerCase();
+      if (period === 'pm' && h < 12) h += 12;
+      if (period === 'am' && h === 12) h = 0;
+      if (h >= 0 && h <= 23 && mins >= 0 && mins <= 59) {
+        return { time: String(h).padStart(2, '0') + ':' + String(mins).padStart(2, '0'), match: m[0] };
+      }
+    }
+    return null;
+  }
+
+  function parseQuickAdd(raw) {
+    const tagResult = extractTagsFromText(raw);
+    let working = tagResult.text;
+
+    const dateHit = extractDateFromText(working);
+    if (dateHit) working = working.replace(dateHit.match, ' ');
+
+    let timeHit = extractTimeFromText(working);
+    if (timeHit) working = working.replace(timeHit.match, ' ');
+    else {
+      timeHit = extractBareTimeFromText(working);
+      if (timeHit) working = working.replace(timeHit.match, ' ');
+    }
+
+    const durationHit = extractDurationFromText(working);
+    if (durationHit) working = working.replace(durationHit.match, ' ');
+
+    let priority = extractPriorityFromText(working);
+    if (priority) {
+      working = working.replace(/\b(urgent|asap|as soon as possible|high priority|really important|critical|low priority|whenever|no rush|not urgent|when i get a chance)\b/gi, ' ');
+    } else {
+      const qp = extractQuickAddPriority(working);
+      if (qp) { priority = qp.priority; working = working.replace(new RegExp('\\s*' + qp.match + '\\s*$', 'i'), ' '); }
+    }
+
+    working = working.replace(/\s+/g, ' ').trim();
+    const title = cleanTitle(working) || raw.trim();
+
+    return {
+      title: title,
+      date: dateHit ? dateHit.date : null,
+      time: timeHit ? timeHit.time : null,
+      estimatedMinutes: durationHit ? durationHit.minutes : null,
+      priority: priority || 'medium',
+      tags: tagResult.tags
+    };
+  }
+
+  function extractTasks(transcript) {
+    const segments = splitIntoSegments(transcript);
+    let lastDate = null;
+    let lastTime = null;
+    let carryTimeOnce = false;
+    const results = [];
+
+    segments.forEach(function (segment) {
+      let working = segment;
+
+      const dateHit = extractDateFromText(working);
+      if (dateHit) working = working.replace(dateHit.match, ' ');
+
+      const timeHit = extractTimeFromText(working);
+      if (timeHit) working = working.replace(timeHit.match, ' ');
+
+      const durationHit = extractDurationFromText(working);
+      if (durationHit) working = working.replace(durationHit.match, ' ');
+
+      const priority = extractPriorityFromText(working);
+      if (priority) {
+        working = working.replace(/\b(urgent|asap|as soon as possible|high priority|really important|critical|low priority|whenever|no rush|not urgent|when i get a chance)\b/gi, ' ');
+      }
+
+      working = working.replace(/\s+/g, ' ').trim();
+      const title = cleanTitle(working);
+
+      if (!title || JUNK_TITLES.test(title)) {
+        // A segment that's only a date/time preamble ("Tomorrow at 8 AM,")
+        // with no task of its own — carry its info to the next real task
+        // instead of losing it just because it split into its own segment.
+        if (dateHit) lastDate = dateHit.date;
+        if (timeHit) { lastTime = timeHit.time; carryTimeOnce = true; }
+        return;
+      }
+
+      let date = dateHit ? dateHit.date : (lastDate || null);
+      const time = timeHit ? timeHit.time : (carryTimeOnce ? lastTime : null);
+      carryTimeOnce = false; // a carried time applies to one task only, not the whole rest of the list
+      if (dateHit) lastDate = dateHit.date;
+
+      results.push({
+        title: title,
+        date: date,
+        time: time,
+        priority: priority || 'medium',
+        estimatedMinutes: durationHit ? durationHit.minutes : null
+      });
+    });
+
+    return results;
+  }
+
+  /* ---------- Review screen ---------- */
+  function renderReviewList() {
+    const listEl = document.getElementById('review-list');
+    listEl.innerHTML = '';
+    if (pendingReviewTasks.length === 0) {
+      listEl.innerHTML = '<div class="review-no-tasks">No tasks were recognized in that. Try again, or edit the transcript by typing instead.</div>';
+      return;
+    }
+    pendingReviewTasks.forEach(function (t) {
+      const card = document.createElement('div');
+      card.className = 'review-card';
+      card.dataset.id = t._id;
+      card.innerHTML =
+        '<div class="review-card-top">' +
+          '<input type="text" value="' + escapeAttr(t.title) + '" aria-label="Task title" data-field="title">' +
+          '<button type="button" data-action="remove" aria-label="Remove this task">' + iconSvg('trash') + '</button>' +
+        '</div>' +
+        '<div class="review-card-row">' +
+          '<select data-field="priority" aria-label="Priority">' +
+            '<option value="low"' + (t.priority === 'low' ? ' selected' : '') + '>🟢 Low</option>' +
+            '<option value="medium"' + (t.priority === 'medium' ? ' selected' : '') + '>🟡 Medium</option>' +
+            '<option value="high"' + (t.priority === 'high' ? ' selected' : '') + '>🔴 High</option>' +
+          '</select>' +
+          '<input type="date" data-field="date" value="' + (t.date || '') + '" aria-label="Due date">' +
+          '<input type="time" data-field="time" value="' + (t.time || '') + '" aria-label="Due time">' +
+          '<select data-field="duration" aria-label="Estimated time">' + durationSelectOptionsHTML(t.estimatedMinutes) + '</select>' +
+        '</div>';
+
+      card.querySelector('[data-field="title"]').addEventListener('input', function (e) {
+        t.title = e.target.value;
+      });
+      card.querySelector('[data-field="priority"]').addEventListener('change', function (e) {
+        t.priority = e.target.value;
+      });
+      card.querySelector('[data-field="date"]').addEventListener('change', function (e) {
+        t.date = e.target.value || null;
+      });
+      card.querySelector('[data-field="time"]').addEventListener('change', function (e) {
+        t.time = e.target.value || null;
+      });
+      card.querySelector('[data-field="duration"]').addEventListener('change', function (e) {
+        t.estimatedMinutes = e.target.value ? parseInt(e.target.value, 10) : null;
+      });
+      card.querySelector('[data-action="remove"]').addEventListener('click', function () {
+        pendingReviewTasks = pendingReviewTasks.filter(function (x) { return x._id !== t._id; });
+        renderReviewList();
+      });
+
+      listEl.appendChild(card);
+    });
+  }
+
+  document.getElementById('review-cancel-btn').addEventListener('click', closeVoiceModal);
+  document.getElementById('review-add-btn').addEventListener('click', function () {
+    const toAdd = pendingReviewTasks.filter(function (t) { return t.title && t.title.trim(); });
+    if (toAdd.length === 0) {
+      showToast('No tasks to add — remove was applied to all of them.', false);
+      return;
+    }
+    toAdd.forEach(function (t) {
+      addTask(t.title, { priority: t.priority, date: t.date, time: t.time, estimatedMinutes: t.estimatedMinutes });
+    });
+    closeVoiceModal();
+    showToast(toAdd.length + ' task' + (toAdd.length === 1 ? '' : 's') + ' added from voice.', false);
+  });
+
+  /* ============ Init ============ */
+  function filterTasks(filterName) {
+    currentFilter = filterName;
+    renderTasks();
+  }
+
+  function seedIfEmpty() {
+    // No demo data injected — the app starts genuinely empty, per spec.
+  }
+
+  loadTheme();
+  loadLists();
+  loadTasks();
+  seedIfEmpty();
+  renderListSwitcher();
+  renderAll();
+  checkVoiceSupport();
+  loadReminderPref();
+  loadAutoCompleteSetting();
+
+  window.addEventListener('storage', function (e) {
+    if (e.key === STORAGE_KEY) { loadTasks(); renderAll(); }
+  });
+})();
+</script>
+</body>
+</html>
