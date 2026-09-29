@@ -782,6 +782,24 @@
   }
   .celebrate span { display: block; font-weight: 400; color: var(--ink-soft); font-size: 12.5px; margin-top: 2px; }
 
+  /* ---------- Missed-reminder banner ---------- */
+  .missed-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--medium);
+    border-radius: var(--radius);
+    padding: 12px 12px 12px 14px;
+    margin-bottom: 16px;
+    font-size: 13.5px;
+  }
+  .missed-banner[hidden], #persist-btn[hidden] { display: none; }
+  .missed-banner .missed-text { flex: 1; min-width: 0; }
+  .missed-banner .missed-text b { display: block; font-weight: 600; }
+  .missed-banner .missed-text span { display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 2px; overflow-wrap: anywhere; }
+
   /* ---------- Modal (Settings) ---------- */
   .modal-backdrop {
     position: fixed;
@@ -1088,6 +1106,17 @@
     <span>You finished everything on today's list.</span>
   </div>
 
+  <div id="missed-banner" class="missed-banner" role="status" hidden>
+    <div class="missed-text">
+      <b id="missed-title"></b>
+      <span id="missed-detail"></span>
+    </div>
+    <button type="button" class="btn btn-ghost" id="missed-review-btn">Review</button>
+    <button type="button" class="icon-btn" id="missed-dismiss-btn" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
   <div class="add-task-card">
     <form class="add-task-row" id="add-task-form">
       <label for="task-input" class="sr-only">Add a task</label>
@@ -1253,6 +1282,13 @@
     <div class="setting-row">
       <div class="label">Clear all tasks</div>
       <button class="btn btn-danger" id="clear-all-btn">Clear all</button>
+    </div>
+
+    <div class="setting-row" style="display:block;">
+      <div class="label" style="margin-bottom:4px;">Data safety</div>
+      <div class="sub" id="backup-sub">&hellip;</div>
+      <div class="sub" id="persist-sub" style="margin-top:6px;">&hellip;</div>
+      <button class="btn btn-ghost" id="persist-btn" type="button" style="margin-top:8px;" hidden>Ask browser to protect my data</button>
     </div>
 
     <div class="setting-row">
@@ -1470,6 +1506,7 @@
   let currentTypeFilter = '';
   let currentFilter = 'all';
   let searchQuery = '';
+  let renderedDay = ''; // the calendar day ("YYYY-MM-DD") the task list was last drawn for
   let lastDeleted = null;
   let undoTimer = null;
   let dragSourceId = null;
@@ -1516,15 +1553,23 @@
     return h + (h === 1 ? ' hour' : ' hours');
   }
   function durationSelectOptionsHTML(selectedMinutes) {
-    const selStr = selectedMinutes ? String(selectedMinutes) : '';
+    // Only ever a positive whole number reaches the HTML — anything else
+    // (e.g. a bad value from an imported file) is treated as "no estimate".
+    const selNum = Math.round(Number(selectedMinutes));
+    const selStr = (Number.isFinite(selNum) && selNum > 0) ? String(selNum) : '';
     const preset = DURATION_PRESETS.some(function (p) { return p.value === selStr; });
     let html = DURATION_PRESETS.map(function (p) {
       return '<option value="' + p.value + '"' + (selStr === p.value ? ' selected' : '') + '>' + p.label + '</option>';
     }).join('');
     if (!preset && selStr) {
-      html += '<option value="' + selStr + '" selected>' + formatDuration(selectedMinutes) + '</option>';
+      html += '<option value="' + selStr + '" selected>' + formatDuration(selNum) + '</option>';
     }
     return html;
+  }
+
+  const PRIORITIES = ['low', 'medium', 'high'];
+  function safePriority(p) {
+    return PRIORITIES.indexOf(p) !== -1 ? p : 'medium';
   }
 
   function uidList() {
@@ -1792,21 +1837,26 @@
   }
 
   function clearCompleted() {
+    // Archived tasks are deliberately left alone — they were put away on
+    // purpose and are managed from the Archive screen.
     const now = Date.now();
-    const affected = tasks.filter(function (t) { return t.completed && !t.deleted; });
+    const affected = tasks.filter(function (t) { return t.completed && !t.deleted && !t.archived; });
     affected.forEach(function (t) { t.deleted = true; t.deletedAt = now; t.updatedAt = now; });
     saveTasks();
     renderAll();
     affected.forEach(function (t) { unscheduleTaskPush(t.id); });
+    return affected.length;
   }
 
   function clearAll() {
+    // Matches the list currently being viewed ("All Lists" = every list).
     const now = Date.now();
-    const affected = activeScope();
+    const affected = currentListScope().slice();
     affected.forEach(function (t) { t.deleted = true; t.deletedAt = now; t.updatedAt = now; });
     saveTasks();
     renderAll();
     affected.forEach(function (t) { unscheduleTaskPush(t.id); });
+    return affected.length;
   }
 
   /* ---------- Archive & Trash ---------- */
@@ -1971,9 +2021,21 @@
       case 'every_x_days':
         d.setDate(d.getDate() + Math.max(2, recurrence.interval || 2));
         break;
-      case 'monthly':
-        d.setMonth(d.getMonth() + 1);
+      case 'monthly': {
+        // Calendar-safe: land on the same day next month, or the month's last
+        // day if it's shorter (Jan 31 -> Feb 28/29). anchorDay remembers the
+        // original day so the series returns to the 31st in longer months
+        // instead of drifting down to the 28th.
+        const p = dateStr.split('-').map(Number);
+        if (p.length !== 3 || p.some(isNaN)) return null;
+        const anchor = (recurrence.anchorDay >= 1 && recurrence.anchorDay <= 31) ? Math.floor(recurrence.anchorDay) : p[2];
+        let y = p[0];
+        let mo = p[1] + 1; // 1-based next month
+        if (mo > 12) { mo = 1; y += 1; }
+        const daysInMonth = new Date(y, mo, 0).getDate();
+        d.setFullYear(y, mo - 1, Math.min(anchor, daysInMonth));
         break;
+      }
       default:
         return null;
     }
@@ -2146,7 +2208,7 @@
       : '<button type="button" class="subtask-add-link" data-action="toggle-subtasks">+ Add subtask</button>';
 
     const rowsHTML = subs.map(function (s) {
-      return '<div class="subtask-row" draggable="true" data-sub-id="' + s.id + '">' +
+      return '<div class="subtask-row" draggable="true" data-sub-id="' + escapeAttr(s.id) + '">' +
         '<button type="button" class="subtask-check' + (s.completed ? ' checked' : '') + '" data-action="toggle-sub" aria-label="' + (s.completed ? 'Mark subtask incomplete' : 'Mark subtask complete') + '">' + (s.completed ? iconSvg('check') : '') + '</button>' +
         '<input type="text" class="subtask-title-input' + (s.completed ? ' completed' : '') + '" value="' + escapeAttr(s.title) + '" data-action="edit-sub" aria-label="Subtask title">' +
         '<button type="button" class="subtask-delete" data-action="delete-sub" aria-label="Delete subtask">' + iconSvg('trash') + '</button>' +
@@ -2292,7 +2354,7 @@
       '<div class="task-body">' +
         '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
         '<div class="task-meta">' +
-          '<span class="badge priority-' + t.priority + '"><span class="priority-dot priority-' + t.priority + '"></span>' + capitalize(t.priority) + '</span>' +
+          '<span class="badge priority-' + safePriority(t.priority) + '"><span class="priority-dot priority-' + safePriority(t.priority) + '"></span>' + capitalize(safePriority(t.priority)) + '</span>' +
           (metaLabel ? '<span class="badge badge-date">' + metaLabel + '</span>' : '') +
           listBadge + typeBadge + recurrenceBadge + durationBadge + focusedBadge + tagBadges +
         '</div>' +
@@ -2365,13 +2427,13 @@
             '<option value="medium"' + (t.priority === 'medium' ? ' selected' : '') + '>🟡 Medium</option>' +
             '<option value="high"' + (t.priority === 'high' ? ' selected' : '') + '>🔴 High</option>' +
           '</select>' +
-          '<input type="date" name="date" value="' + (t.date || '') + '" aria-label="Due date">' +
-          '<input type="time" name="time" value="' + (t.time || '') + '" aria-label="Due time">' +
+          '<input type="date" name="date" value="' + escapeAttr(t.date || '') + '" aria-label="Due date">' +
+          '<input type="time" name="time" value="' + escapeAttr(t.time || '') + '" aria-label="Due time">' +
           '<select name="estimatedMinutes" aria-label="Estimated time">' + durationSelectOptionsHTML(t.estimatedMinutes) + '</select>' +
         '</div>' +
         '<div class="edit-row">' +
           '<select name="listId" aria-label="List">' +
-            lists.map(function (l) { return '<option value="' + l.id + '"' + (t.listId === l.id ? ' selected' : '') + '>' + escapeHtml(l.name) + '</option>'; }).join('') +
+            lists.map(function (l) { return '<option value="' + escapeAttr(l.id) + '"' + (t.listId === l.id ? ' selected' : '') + '>' + escapeHtml(l.name) + '</option>'; }).join('') +
           '</select>' +
           '<select name="type" aria-label="Type">' +
             TASK_TYPES.map(function (opt) { return '<option value="' + opt.value + '"' + (((t.type || '') === opt.value) ? ' selected' : '') + '>' + opt.label + '</option>'; }).join('') +
@@ -2388,7 +2450,7 @@
             '<option value="every_x_days"' + (t.recurrence && t.recurrence.frequency === 'every_x_days' ? ' selected' : '') + '>Every few days</option>' +
             '<option value="monthly"' + (t.recurrence && t.recurrence.frequency === 'monthly' ? ' selected' : '') + '>Monthly</option>' +
           '</select>' +
-          '<input type="number" name="recurrenceInterval" min="2" max="365" style="width:70px;" aria-label="Repeat every N days" value="' + ((t.recurrence && t.recurrence.frequency === 'every_x_days') ? t.recurrence.interval : 2) + '"' + ((t.recurrence && t.recurrence.frequency === 'every_x_days') ? '' : ' hidden') + '>' +
+          '<input type="number" name="recurrenceInterval" min="2" max="365" style="width:70px;" aria-label="Repeat every N days" value="' + ((t.recurrence && t.recurrence.frequency === 'every_x_days') ? escapeAttr(t.recurrence.interval) : 2) + '"' + ((t.recurrence && t.recurrence.frequency === 'every_x_days') ? '' : ' hidden') + '>' +
         '</div>' +
         '<div class="edit-actions">' +
           '<button type="button" class="btn btn-ghost" data-action="cancel">Cancel</button>' +
@@ -2420,6 +2482,9 @@
         .filter(Boolean);
 
       const freq = form.recurrenceFreq.value;
+      // A recurring task needs a date to anchor the schedule to — default
+      // to today rather than silently dropping the repeat setting.
+      const date = form.date.value || (freq ? todayStr() : null);
       let recurrence = null;
       if (freq) {
         recurrence = {
@@ -2428,10 +2493,14 @@
           interval: freq === 'every_x_days' ? Math.max(2, parseInt(form.recurrenceInterval.value, 10) || 2) : 1,
           endDate: (t.recurrence && t.recurrence.endDate) || null
         };
+        if (freq === 'monthly') {
+          // Remember the day of the month the series is anchored to. Keep the
+          // existing anchor if the date wasn't changed (e.g. a Feb 28 entry in
+          // a series anchored to the 31st); otherwise take it from the new date.
+          const keep = t.recurrence && t.recurrence.frequency === 'monthly' && t.recurrence.anchorDay && date === t.date;
+          recurrence.anchorDay = keep ? t.recurrence.anchorDay : parseInt(date.slice(8, 10), 10);
+        }
       }
-      // A recurring task needs a date to anchor the schedule to — default
-      // to today rather than silently dropping the repeat setting.
-      const date = form.date.value || (freq ? todayStr() : null);
 
       editTask(t.id, {
         title: newTitle,
@@ -2478,6 +2547,7 @@
   }
 
   function renderTasks() {
+    renderedDay = todayStr();
     const visible = visibleTasks();
     sectionsRoot.innerHTML = '';
 
@@ -2939,6 +3009,12 @@
     });
   }
 
+  // A task can only trigger a reminder while it is still live: not completed,
+  // not archived, not in Trash, and not already reminded.
+  function isReminderEligible(t) {
+    return !t.completed && !t.archived && !t.deleted && !t.notified;
+  }
+
   function markAlreadyPastDueAsNotified() {
     // When reminders are first turned on, don't fire a barrage of
     // notifications for everything that's already overdue — only remind
@@ -2946,7 +3022,7 @@
     const now = Date.now();
     let changed = false;
     tasks.forEach(function (t) {
-      if (t.completed || t.notified) return;
+      if (!isReminderEligible(t)) return;
       const due = getDueDateTime(t);
       if (due && due.getTime() <= now) { t.notified = true; changed = true; }
     });
@@ -2958,7 +3034,7 @@
     const now = Date.now();
     let changed = false;
     tasks.forEach(function (t) {
-      if (t.completed || t.notified) return;
+      if (!isReminderEligible(t)) return;
       const due = getDueDateTime(t);
       if (due && due.getTime() <= now) {
         fireReminderNotification(t);
@@ -2969,9 +3045,54 @@
     if (changed) saveTasks();
   }
 
-  function startReminderScheduler() {
+  /* ---------- Missed reminders ---------- */
+  // Reminders only fire while the app is open. If a task came due while the
+  // app was closed (or the phone had frozen the page), the reminder was
+  // missed. Rather than replaying old alerts one by one — which could flood
+  // the notification tray — everything that was missed is marked as reminded
+  // and summarised once, in-app, with a shortcut to Daily Review.
+  const missedBanner = document.getElementById('missed-banner');
+
+  function showMissedBanner(missed) {
+    const sorted = missed.slice().sort(function (a, b) {
+      return getDueDateTime(a).getTime() - getDueDateTime(b).getTime();
+    });
+    document.getElementById('missed-title').textContent =
+      sorted.length + (sorted.length === 1 ? ' reminder' : ' reminders') + " came due while the app wasn't running";
+    const names = sorted.slice(0, 3).map(function (t) { return t.title; });
+    document.getElementById('missed-detail').textContent =
+      names.join(' · ') + (sorted.length > 3 ? ' · +' + (sorted.length - 3) + ' more' : '');
+    missedBanner.hidden = false;
+  }
+
+  function handleMissedReminders() {
+    if (!reminderInterval) return; // reminders are off
+    if (!notificationsSupported || Notification.permission !== 'granted') return;
+    const now = Date.now();
+    const missed = tasks.filter(function (t) {
+      if (!isReminderEligible(t)) return false;
+      const due = getDueDateTime(t);
+      return !!due && due.getTime() <= now;
+    });
+    if (missed.length === 0) return;
+    missed.forEach(function (t) { t.notified = true; });
+    saveTasks();
+    showMissedBanner(missed);
+  }
+
+  document.getElementById('missed-dismiss-btn').addEventListener('click', function () {
+    missedBanner.hidden = true;
+  });
+  document.getElementById('missed-review-btn').addEventListener('click', function () {
+    missedBanner.hidden = true;
+    openDailyReview();
+  });
+
+  // silentCatchUp is true only when the user has just switched reminders on:
+  // tasks that were already overdue at that moment are not reminded about.
+  function startReminderScheduler(silentCatchUp) {
     if (reminderInterval) return;
-    markAlreadyPastDueAsNotified();
+    if (silentCatchUp) markAlreadyPastDueAsNotified();
     reminderInterval = setInterval(checkDueReminders, 20000);
   }
 
@@ -2985,7 +3106,10 @@
     try { pref = localStorage.getItem(NOTIF_KEY); } catch (e) {}
     const on = notificationsSupported && pref === 'on' && Notification.permission === 'granted';
     updateReminderUI(on);
-    if (on) startReminderScheduler();
+    if (on) {
+      startReminderScheduler(false);
+      handleMissedReminders();
+    }
   }
 
   reminderSwitch.addEventListener('click', function () {
@@ -3009,7 +3133,7 @@
       if (result === 'granted') {
         try { localStorage.setItem(NOTIF_KEY, 'on'); } catch (e) {}
         updateReminderUI(true);
-        startReminderScheduler();
+        startReminderScheduler(true);
         showToast('Reminders are on.', false);
       } else {
         try { localStorage.setItem(NOTIF_KEY, 'off'); } catch (e) {}
@@ -3022,6 +3146,8 @@
   /* ============ Settings modal ============ */
   const settingsBackdrop = document.getElementById('settings-backdrop');
   document.getElementById('settings-btn').addEventListener('click', function () {
+    updateBackupUI();
+    refreshPersistStatus();
     settingsBackdrop.classList.add('open');
     focusModalClose(settingsBackdrop);
   });
@@ -3033,17 +3159,97 @@
   });
   document.getElementById('clear-completed-btn').addEventListener('click', function () {
     if (!activeScope().some(function (t) { return t.completed; })) { showToast('No completed tasks to clear.', false); return; }
-    clearCompleted();
-    showToast('Completed tasks cleared.', false);
+    const n = clearCompleted();
+    showToast(n + ' completed task' + (n === 1 ? '' : 's') + ' moved to Trash.', false);
   });
   document.getElementById('clear-all-btn').addEventListener('click', function () {
-    if (activeScope().length === 0) { showToast('Your list is already empty.', false); return; }
-    if (window.confirm("Clear all tasks from your list? They'll be moved to Trash, where you can restore them or delete them for good.")) {
+    const n = currentListScope().length;
+    const where = (currentListId === null) ? 'all lists' : '"' + getListName(currentListId) + '"';
+    if (n === 0) {
+      showToast(currentListId === null ? 'Your list is already empty.' : 'There are no tasks in ' + where + ' to clear.', false);
+      return;
+    }
+    if (window.confirm('Move ' + n + ' task' + (n === 1 ? '' : 's') + ' in ' + where + " to Trash? Archived tasks aren't affected. You can restore them from Trash or delete them for good.")) {
       clearAll();
       settingsBackdrop.classList.remove('open');
-      showToast('All tasks cleared.', false);
+      showToast(n + ' task' + (n === 1 ? '' : 's') + ' moved to Trash.', false);
     }
   });
+
+  /* ============ Data safety: backup reminder + persistent storage ============ */
+  // Everything lives in this browser's storage, so an exported file is the
+  // only dependable backup. "Persistent storage" only asks the browser not to
+  // clear the data automatically when the device runs low on space — it does
+  // NOT protect against clearing site data, uninstalling, or losing the phone.
+  const LAST_EXPORT_KEY = 'salafiscope_last_export_v1';
+  const BACKUP_STALE_DAYS = 14;
+
+  function getLastExport() {
+    try {
+      const v = Number(localStorage.getItem(LAST_EXPORT_KEY));
+      return v > 0 ? v : null;
+    } catch (e) { return null; }
+  }
+
+  function updateBackupUI() {
+    const el = document.getElementById('backup-sub');
+    if (!el) return;
+    const last = getLastExport();
+    if (!last) {
+      el.textContent = tasks.length === 0
+        ? 'Nothing to back up yet. Once you have tasks, use Export to keep a copy.'
+        : "You haven't exported a backup yet. Your tasks are stored only in this browser — use Export to keep a copy.";
+      return;
+    }
+    const days = Math.floor((Date.now() - last) / 86400000);
+    const when = days <= 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago';
+    el.textContent = 'Last export: ' + when + '.' +
+      (days >= BACKUP_STALE_DAYS ? ' It has been a while — consider exporting a fresh backup.' : '');
+  }
+
+  function refreshPersistStatus() {
+    const sub = document.getElementById('persist-sub');
+    const btn = document.getElementById('persist-btn');
+    if (!sub || !btn) return Promise.resolve();
+    if (!(navigator.storage && navigator.storage.persisted)) {
+      sub.textContent = "This browser can't tell us whether storage is protected from automatic clearing. Exporting a backup is the reliable safeguard.";
+      btn.hidden = true;
+      return Promise.resolve();
+    }
+    return navigator.storage.persisted().then(function (persisted) {
+      if (persisted) {
+        sub.textContent = "Your browser has marked this app's storage as persistent, so it should not clear it automatically when space runs low. This does not protect against clearing site data, uninstalling the app, or losing this phone — keep exporting backups.";
+        btn.hidden = true;
+      } else {
+        sub.textContent = 'Storage is not marked persistent, so the browser may clear it if the device runs low on space. Exporting a backup is the reliable safeguard.';
+        btn.hidden = !navigator.storage.persist;
+      }
+    }).catch(function () {
+      sub.textContent = "Couldn't check storage protection. Exporting a backup is the reliable safeguard.";
+      btn.hidden = true;
+    });
+  }
+
+  document.getElementById('persist-btn').addEventListener('click', function () {
+    if (!(navigator.storage && navigator.storage.persist)) return;
+    navigator.storage.persist().then(function (granted) {
+      showToast(granted
+        ? 'Your browser agreed to keep this storage. Keep exporting backups too.'
+        : "The browser didn't agree (installing the app usually helps). Keep exporting backups.", false);
+      return refreshPersistStatus();
+    }).catch(function () {
+      showToast("Couldn't ask the browser. Keep exporting backups.", false);
+    });
+  });
+
+  // Installed apps are the case where browsers most often grant this quietly
+  // (Chrome never shows a prompt), so ask automatically only there. In a normal
+  // tab the button above lets the user ask explicitly.
+  if (isStandalone() && navigator.storage && navigator.storage.persisted && navigator.storage.persist) {
+    navigator.storage.persisted().then(function (p) {
+      if (!p) return navigator.storage.persist();
+    }).catch(function () {});
+  }
 
   /* ============ Export / Import ============ */
   function exportData() {
@@ -3067,6 +3273,8 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      try { localStorage.setItem(LAST_EXPORT_KEY, String(Date.now())); } catch (e) {}
+      updateBackupUI();
       showToast('Export downloaded.', false);
     } catch (e) {
       console.warn('Export failed.', e);
@@ -3075,80 +3283,148 @@
   }
   document.getElementById('export-data-btn').addEventListener('click', exportData);
 
+  /* ---------- Import validation helpers ---------- */
+  const IMPORT_MAX_TASKS = 5000;
+  const IMPORT_MAX_LISTS = 100;
+  const IMPORT_MAX_SUBTASKS = 200;
+  const IMPORT_MAX_TITLE = 500;
+  const IMPORT_MAX_NOTES = 5000;
+  const IMPORT_MAX_LIST_NAME = 60;
+  const IMPORT_MAX_TAG = 40;
+  const IMPORT_MAX_TAGS = 30;
+  const RECURRENCE_FREQUENCIES = ['daily', 'weekdays', 'weekly', 'every_x_days', 'monthly'];
+
+  function isKeyLike(v) {
+    return (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v));
+  }
+  function cleanText(v, max) {
+    if (typeof v !== 'string' && typeof v !== 'number') return '';
+    return String(v).trim().slice(0, max);
+  }
+  function cleanDateStr(v) {
+    if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+    const y = Number(v.slice(0, 4)), m = Number(v.slice(5, 7)), d = Number(v.slice(8, 10));
+    if (y < 1900 || y > 2200) return null;
+    const dt = new Date(y, m - 1, d);
+    return (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d) ? v : null;
+  }
+  function cleanTimeStr(v) {
+    return (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)) ? v : null;
+  }
+  function cleanWholeNumber(v, min, max) {
+    const n = (typeof v === 'number') ? v : ((typeof v === 'string' && /^\d+(\.\d+)?$/.test(v.trim())) ? Number(v) : NaN);
+    if (!isFinite(n)) return null;
+    const r = Math.round(n);
+    return (r >= min && r <= max) ? r : null;
+  }
+  function cleanTimestamp(v) {
+    return (typeof v === 'number' && isFinite(v) && v > 0 && v < 4102444800000) ? v : null;
+  }
+  function cleanTags(v) {
+    if (!Array.isArray(v)) return [];
+    const out = [];
+    v.forEach(function (tag) {
+      if (typeof tag !== 'string') return;
+      const clean = tag.trim().replace(/^#+/, '').toLowerCase().slice(0, IMPORT_MAX_TAG);
+      if (clean && out.indexOf(clean) === -1 && out.length < IMPORT_MAX_TAGS) out.push(clean);
+    });
+    return out;
+  }
+
   function importData(payload) {
     // Never touch existing lists' identities — match by name so re-importing
     // the same backup doesn't create duplicate lists — but every task and
     // subtask gets a brand-new id, so nothing can collide with what's
     // already here. This is an additive merge, never a silent overwrite.
-    const importedLists = Array.isArray(payload.lists) ? payload.lists : [];
-    const importedTasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+    // Nothing in the file is trusted: every field is checked and coerced to
+    // the shape the app expects, and anything unusable is dropped rather than
+    // stored (so it can never reach the page as markup).
+    const importedLists = Array.isArray(payload.lists) ? payload.lists.slice(0, IMPORT_MAX_LISTS) : [];
+    const allImportedTasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+    const importedTasks = allImportedTasks.slice(0, IMPORT_MAX_TASKS);
+    let skipped = allImportedTasks.length - importedTasks.length;
 
-    const listIdMap = {};
+    const listIdMap = Object.create(null);
     importedLists.forEach(function (l) {
-      if (!l || !l.id || !l.name) return;
-      const existing = lists.find(function (x) { return x.name.trim().toLowerCase() === String(l.name).trim().toLowerCase(); });
+      if (!l || typeof l !== 'object' || !isKeyLike(l.id)) return;
+      const name = cleanText(l.name, IMPORT_MAX_LIST_NAME);
+      if (!name) return;
+      const existing = lists.find(function (x) { return x.name.trim().toLowerCase() === name.toLowerCase(); });
       if (existing) {
-        listIdMap[l.id] = existing.id;
+        listIdMap[String(l.id)] = existing.id;
       } else {
-        const created = createList(l.name);
-        if (created) listIdMap[l.id] = created.id;
+        const created = createList(name);
+        if (created) listIdMap[String(l.id)] = created.id;
       }
     });
 
-    const recurrenceIdMap = {};
+    const recurrenceIdMap = Object.create(null);
     let importedCount = 0;
 
     importedTasks.forEach(function (t) {
-      if (!t || !t.title) return;
-      const newListId = (t.listId && listIdMap[t.listId]) ? listIdMap[t.listId] : defaultListId();
+      if (!t || typeof t !== 'object') { skipped++; return; }
+      const title = cleanText(t.title, IMPORT_MAX_TITLE);
+      if (!title) { skipped++; return; }
+      const newListId = (isKeyLike(t.listId) && listIdMap[String(t.listId)]) ? listIdMap[String(t.listId)] : defaultListId();
 
       let recurrence = null;
-      if (t.recurrence && t.recurrence.frequency) {
-        const oldRecId = t.recurrence.id || 'r';
+      const r = t.recurrence;
+      if (r && typeof r === 'object' && RECURRENCE_FREQUENCIES.indexOf(r.frequency) !== -1) {
+        const oldRecId = isKeyLike(r.id) ? String(r.id) : 'r';
         if (!recurrenceIdMap[oldRecId]) recurrenceIdMap[oldRecId] = uid();
         recurrence = {
           id: recurrenceIdMap[oldRecId],
-          frequency: t.recurrence.frequency,
-          interval: t.recurrence.interval || 1,
-          endDate: t.recurrence.endDate || null
+          frequency: r.frequency,
+          interval: r.frequency === 'every_x_days' ? (cleanWholeNumber(r.interval, 2, 365) || 2) : 1,
+          endDate: cleanDateStr(r.endDate)
         };
+        if (r.frequency === 'monthly') {
+          const anchor = cleanWholeNumber(r.anchorDay, 1, 31);
+          if (anchor) recurrence.anchorDay = anchor;
+        }
       }
 
       const now = Date.now();
+      const subtasks = [];
+      (Array.isArray(t.subtasks) ? t.subtasks.slice(0, IMPORT_MAX_SUBTASKS) : []).forEach(function (s) {
+        if (!s || typeof s !== 'object') return;
+        const subTitle = cleanText(s.title, IMPORT_MAX_TITLE);
+        if (!subTitle) return;
+        subtasks.push({
+          id: uid(),
+          title: subTitle,
+          completed: !!s.completed,
+          completedAt: cleanTimestamp(s.completedAt),
+          order: subtasks.length,
+          createdAt: cleanTimestamp(s.createdAt) || now
+        });
+      });
+
       tasks.push({
         id: uid(),
-        title: String(t.title),
+        title: title,
         completed: !!t.completed,
-        completedAt: t.completedAt || null,
-        priority: ['low', 'medium', 'high'].indexOf(t.priority) !== -1 ? t.priority : 'medium',
-        date: t.date || null,
-        time: t.time || null,
+        completedAt: cleanTimestamp(t.completedAt),
+        priority: safePriority(t.priority),
+        date: cleanDateStr(t.date),
+        time: cleanTimeStr(t.time),
         order: tasks.length,
-        createdAt: t.createdAt || now,
+        createdAt: cleanTimestamp(t.createdAt) || now,
         updatedAt: now,
         archived: !!t.archived,
-        archivedAt: t.archivedAt || null,
+        archivedAt: cleanTimestamp(t.archivedAt),
         deleted: !!t.deleted,
-        deletedAt: t.deletedAt || null,
+        deletedAt: cleanTimestamp(t.deletedAt),
         notified: false,
         listId: newListId,
-        type: t.type || null,
-        tags: Array.isArray(t.tags) ? t.tags.slice() : [],
+        type: TASK_TYPES.some(function (x) { return x.value && x.value === t.type; }) ? t.type : null,
+        tags: cleanTags(t.tags),
         recurrence: recurrence,
         spawnedNextId: null, // the task it pointed to has a new id now; not worth relinking
-        estimatedMinutes: t.estimatedMinutes || null,
-        actualMinutes: t.actualMinutes || 0,
-        notes: t.notes || '',
-        subtasks: Array.isArray(t.subtasks) ? t.subtasks.map(function (s, i) {
-          return {
-            id: uid(),
-            title: String(s.title || ''),
-            completed: !!s.completed,
-            completedAt: s.completedAt || null,
-            order: i,
-            createdAt: s.createdAt || now
-          };
-        }) : []
+        estimatedMinutes: cleanWholeNumber(t.estimatedMinutes, 1, 1440),
+        actualMinutes: cleanWholeNumber(t.actualMinutes, 1, 100000) || 0,
+        notes: cleanText(t.notes, IMPORT_MAX_NOTES),
+        subtasks: subtasks
       });
       importedCount++;
     });
@@ -3157,7 +3433,8 @@
     saveTasks();
     currentListId = null;
     renderAll();
-    showToast('Imported ' + importedCount + ' task' + (importedCount === 1 ? '' : 's') + '.', false);
+    showToast('Imported ' + importedCount + ' task' + (importedCount === 1 ? '' : 's') + '.' +
+      (skipped ? ' Skipped ' + skipped + ' invalid item' + (skipped === 1 ? '' : 's') + '.' : ''), false);
   }
 
   document.getElementById('import-data-btn').addEventListener('click', function () {
@@ -3316,7 +3593,7 @@
     let html = '<button type="button" class="list-chip" data-list-id="" aria-pressed="' + (currentListId === null ? 'true' : 'false') + '">All Lists <span style="opacity:.6">(' + scope.length + ')</span></button>';
     lists.forEach(function (l) {
       const count = scope.filter(function (t) { return t.listId === l.id; }).length;
-      html += '<button type="button" class="list-chip" data-list-id="' + l.id + '" aria-pressed="' + (currentListId === l.id ? 'true' : 'false') + '">' + escapeHtml(l.name) + ' <span style="opacity:.6">(' + count + ')</span></button>';
+      html += '<button type="button" class="list-chip" data-list-id="' + escapeAttr(l.id) + '" aria-pressed="' + (currentListId === l.id ? 'true' : 'false') + '">' + escapeHtml(l.name) + ' <span style="opacity:.6">(' + count + ')</span></button>';
     });
     html += '<button type="button" class="list-chip list-chip-add" id="add-list-chip">+ New list</button>';
     el.innerHTML = html;
@@ -3606,14 +3883,20 @@
 
   /* ============ Focus timer ============ */
   const focusBackdrop = document.getElementById('focus-backdrop');
-  let focusState = { taskId: null, durationMinutes: 25, remainingSeconds: 0, elapsedSeconds: 0, intervalId: null };
+  // Time is measured from real timestamps (not by counting ticks), so it stays
+  // accurate even if the phone throttles or freezes the page in the background.
+  //   elapsedBeforeMs — time already counted before the current running stretch
+  //   segmentStart    — when the current running stretch began (null while paused/stopped)
+  //   blockBaseMs     — elapsed time when the current block began ("Continue" starts a new block)
+  let focusState = { taskId: null, durationMinutes: 25, elapsedBeforeMs: 0, blockBaseMs: 0, segmentStart: null, intervalId: null };
   let focusPaused = false;
+  let focusSessionActive = false; // started, and not yet logged, discarded or closed
 
   function populateFocusTaskSelect() {
     const sel = document.getElementById('focus-task-select');
     const opts = activeScope().filter(function (t) { return !t.completed; });
     sel.innerHTML = '<option value="">No specific task</option>' +
-      opts.map(function (t) { return '<option value="' + t.id + '">' + escapeHtml(t.title) + '</option>'; }).join('');
+      opts.map(function (t) { return '<option value="' + escapeAttr(t.id) + '">' + escapeHtml(t.title) + '</option>'; }).join('');
   }
 
   function showFocusState(name) {
@@ -3622,29 +3905,74 @@
     });
   }
 
+  function focusBlockEndMs() {
+    return focusState.blockBaseMs + focusState.durationMinutes * 60000;
+  }
+
+  // Total time actually spent in this session, never more than the current block allows.
+  function focusElapsedMs() {
+    const running = focusState.segmentStart ? Date.now() - focusState.segmentStart : 0;
+    return Math.min(Math.max(focusState.elapsedBeforeMs + running, 0), focusBlockEndMs());
+  }
+
+  function focusLoggedMinutes() {
+    return Math.round(focusElapsedMs() / 60000);
+  }
+
+  function focusTaskObj() {
+    return focusState.taskId ? (tasks.find(function (x) { return x.id === focusState.taskId; }) || null) : null;
+  }
+
   function updateFocusCountdownDisplay() {
-    const s = Math.max(0, focusState.remainingSeconds);
+    const s = Math.max(0, Math.ceil((focusBlockEndMs() - focusElapsedMs()) / 1000));
     const mm = String(Math.floor(s / 60)).padStart(2, '0');
     const ss = String(s % 60).padStart(2, '0');
     document.getElementById('focus-countdown').textContent = mm + ':' + ss;
   }
 
+  // Stop counting but keep the time already spent.
+  function freezeFocusTimer() {
+    focusState.elapsedBeforeMs = focusElapsedMs();
+    focusState.segmentStart = null;
+    clearInterval(focusState.intervalId);
+    focusState.intervalId = null;
+  }
+
+  // Forget the session entirely. Records nothing.
+  function endFocusSession() {
+    clearInterval(focusState.intervalId);
+    focusState.intervalId = null;
+    focusState.segmentStart = null;
+    focusSessionActive = false;
+  }
+
+  function focusOutcomeDetail(prefix) {
+    const mins = focusLoggedMinutes();
+    const t = focusTaskObj();
+    let tail;
+    if (!t) tail = 'No task is selected, so nothing will be saved.';
+    else if (mins > 0) tail = 'Logging will add ' + mins + ' min to "' + t.title + '".';
+    else tail = 'That is under a minute, so nothing will be logged.';
+    return prefix + ' ' + tail;
+  }
+
+  function focusTick() {
+    updateFocusCountdownDisplay();
+    if (focusState.segmentStart && focusElapsedMs() >= focusBlockEndMs()) {
+      freezeFocusTimer();
+      showFocusOutcome('Session complete', focusOutcomeDetail('You finished the full ' + focusState.durationMinutes + '-minute session.'));
+    }
+  }
+
   function runFocusInterval() {
     clearInterval(focusState.intervalId);
-    focusState.intervalId = setInterval(function () {
-      focusState.remainingSeconds--;
-      focusState.elapsedSeconds++;
-      updateFocusCountdownDisplay();
-      if (focusState.remainingSeconds <= 0) {
-        clearInterval(focusState.intervalId);
-        showFocusOutcome('Session complete', 'You finished the full ' + focusState.durationMinutes + '-minute session.');
-      }
-    }, 1000);
+    focusState.segmentStart = Date.now();
+    focusState.intervalId = setInterval(focusTick, 500);
   }
 
   function startFocusCountdown() {
     showFocusState('running');
-    const t = focusState.taskId ? tasks.find(function (x) { return x.id === focusState.taskId; }) : null;
+    const t = focusTaskObj();
     document.getElementById('focus-running-label').textContent = t ? ('Focusing on: ' + t.title) : 'Focusing…';
     document.getElementById('focus-pause-btn').textContent = 'Pause';
     focusPaused = false;
@@ -3658,15 +3986,40 @@
     showFocusState('outcome');
   }
 
-  function logFocusMinutes(mins) {
-    if (focusState.taskId && mins > 0) {
-      const t = tasks.find(function (x) { return x.id === focusState.taskId; });
-      if (t) editTask(t.id, { actualMinutes: (t.actualMinutes || 0) + mins });
+  // Adds the minutes actually spent (never the selected length) to the chosen task.
+  function logFocusSession(label) {
+    const mins = focusLoggedMinutes();
+    const t = focusTaskObj();
+    let msg;
+    if (!t) {
+      msg = 'No task was selected, so no time was saved.';
+    } else if (mins <= 0) {
+      msg = 'Under a minute — nothing was logged.';
+    } else {
+      editTask(t.id, { actualMinutes: (t.actualMinutes || 0) + mins });
+      msg = label + ': ' + mins + ' min added to "' + t.title + '".';
     }
+    endFocusSession();
+    focusBackdrop.classList.remove('open');
+    showToast(msg, false);
+  }
+
+  // Closing never records time. If real time would be thrown away, ask first.
+  function closeFocusModal() {
+    if (focusSessionActive) {
+      const mins = focusLoggedMinutes();
+      if (mins >= 1 && !window.confirm('Discard this focus session? About ' + mins + ' minute' + (mins === 1 ? '' : 's') + " won't be logged.")) {
+        return false;
+      }
+    }
+    endFocusSession();
+    focusBackdrop.classList.remove('open');
+    return true;
   }
 
   function openFocusModal() {
     settingsBackdrop.classList.remove('open');
+    endFocusSession();
     populateFocusTaskSelect();
     document.getElementById('focus-custom-minutes').value = '';
     document.querySelectorAll('.focus-duration-btn').forEach(function (b) { b.style.background = ''; b.style.color = ''; });
@@ -3694,14 +4047,16 @@
     const chosen = custom > 0 ? custom : parseInt(this.dataset.minutes || '25', 10);
     focusState.taskId = document.getElementById('focus-task-select').value || null;
     focusState.durationMinutes = chosen;
-    focusState.remainingSeconds = chosen * 60;
-    focusState.elapsedSeconds = 0;
+    focusState.elapsedBeforeMs = 0;
+    focusState.blockBaseMs = 0;
+    focusSessionActive = true;
     startFocusCountdown();
   });
 
   document.getElementById('focus-pause-btn').addEventListener('click', function () {
     if (!focusPaused) {
-      clearInterval(focusState.intervalId);
+      freezeFocusTimer();
+      updateFocusCountdownDisplay();
       focusPaused = true;
       this.textContent = 'Resume';
     } else {
@@ -3712,37 +4067,34 @@
   });
 
   document.getElementById('focus-stop-btn').addEventListener('click', function () {
-    clearInterval(focusState.intervalId);
-    const mins = Math.round(focusState.elapsedSeconds / 60);
-    showFocusOutcome('Session stopped', 'You focused for about ' + (mins || 1) + ' minute' + (mins === 1 ? '' : 's') + ' before stopping.');
+    freezeFocusTimer();
+    const mins = focusLoggedMinutes();
+    showFocusOutcome('Session stopped', focusOutcomeDetail(
+      mins > 0 ? 'You focused for about ' + mins + ' minute' + (mins === 1 ? '' : 's') + ' before stopping.'
+               : 'You focused for less than a minute before stopping.'));
   });
 
   document.getElementById('focus-log-completed-btn').addEventListener('click', function () {
-    logFocusMinutes(focusState.durationMinutes);
-    focusBackdrop.classList.remove('open');
-    showToast('Focus session logged.', false);
+    logFocusSession('Focus session logged');
   });
   document.getElementById('focus-log-partial-btn').addEventListener('click', function () {
-    logFocusMinutes(Math.max(1, Math.round(focusState.elapsedSeconds / 60)));
-    focusBackdrop.classList.remove('open');
-    showToast('Partial session logged.', false);
+    logFocusSession('Partial session logged');
   });
+  // "Continue" starts another full block and keeps the time already spent,
+  // so nothing from the earlier block is lost before it is logged.
   document.getElementById('focus-continue-btn').addEventListener('click', function () {
-    focusState.remainingSeconds = focusState.durationMinutes * 60;
-    focusState.elapsedSeconds = 0;
+    focusState.blockBaseMs = focusState.elapsedBeforeMs;
     startFocusCountdown();
   });
   document.getElementById('focus-discard-btn').addEventListener('click', function () {
+    endFocusSession();
     focusBackdrop.classList.remove('open');
   });
 
   document.getElementById('open-focus-btn').addEventListener('click', openFocusModal);
-  document.getElementById('focus-close').addEventListener('click', function () {
-    clearInterval(focusState.intervalId);
-    focusBackdrop.classList.remove('open');
-  });
+  document.getElementById('focus-close').addEventListener('click', closeFocusModal);
   focusBackdrop.addEventListener('click', function (e) {
-    if (e.target === focusBackdrop) { clearInterval(focusState.intervalId); focusBackdrop.classList.remove('open'); }
+    if (e.target === focusBackdrop) closeFocusModal();
   });
 
   /* ============ Add task form ============ */
@@ -3817,7 +4169,7 @@
       if (listsBackdrop.classList.contains('open')) listsBackdrop.classList.remove('open');
       if (dailyReviewBackdrop.classList.contains('open')) dailyReviewBackdrop.classList.remove('open');
       if (insightsBackdrop.classList.contains('open')) insightsBackdrop.classList.remove('open');
-      if (focusBackdrop.classList.contains('open')) { clearInterval(focusState.intervalId); focusBackdrop.classList.remove('open'); }
+      if (focusBackdrop.classList.contains('open')) closeFocusModal();
       closeAllTaskMenus();
     }
   });
@@ -4334,8 +4686,8 @@
             '<option value="medium"' + (t.priority === 'medium' ? ' selected' : '') + '>🟡 Medium</option>' +
             '<option value="high"' + (t.priority === 'high' ? ' selected' : '') + '>🔴 High</option>' +
           '</select>' +
-          '<input type="date" data-field="date" value="' + (t.date || '') + '" aria-label="Due date">' +
-          '<input type="time" data-field="time" value="' + (t.time || '') + '" aria-label="Due time">' +
+          '<input type="date" data-field="date" value="' + escapeAttr(t.date || '') + '" aria-label="Due date">' +
+          '<input type="time" data-field="time" value="' + escapeAttr(t.time || '') + '" aria-label="Due time">' +
           '<select data-field="duration" aria-label="Estimated time">' + durationSelectOptionsHTML(t.estimatedMinutes) + '</select>' +
         '</div>';
 
@@ -4376,6 +4728,32 @@
     closeVoiceModal();
     showToast(toAdd.length + ' task' + (toAdd.length === 1 ? '' : 's') + ' added from voice.', false);
   });
+
+  /* ============ Date rollover & returning to the app ============ */
+  // "Today" is worked out whenever the list is drawn, so an app left open (or
+  // put in the background) across midnight would keep showing yesterday's
+  // groupings. These checks redraw when the calendar day changes and refresh
+  // the parts that depend on the clock when the app comes back to the front.
+  function refreshIfDayChanged() {
+    if (todayStr() === renderedDay) return false;
+    // Redrawing would throw away an edit in progress — try again shortly.
+    if (document.querySelector('.edit-form')) return false;
+    renderAll();
+    if (dailyReviewBackdrop.classList.contains('open')) renderDailyReview();
+    return true;
+  }
+
+  function handleReturnToApp() {
+    if (document.visibilityState === 'hidden') return;
+    if (!refreshIfDayChanged()) updateStatistics(); // greeting + counts only, cards untouched
+    handleMissedReminders();
+    if (focusState.segmentStart) focusTick();
+  }
+
+  document.addEventListener('visibilitychange', handleReturnToApp);
+  window.addEventListener('focus', handleReturnToApp);
+  window.addEventListener('pageshow', handleReturnToApp);
+  setInterval(refreshIfDayChanged, 60000);
 
   /* ============ Init ============ */
   function filterTasks(filterName) {
